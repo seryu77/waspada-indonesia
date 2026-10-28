@@ -1,23 +1,17 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Radio, Siren } from 'lucide-react'
+import { Siren } from 'lucide-react'
 import type { Incident } from '../types'
-import { SOURCE_KIND_LABEL } from '../lib/hazards'
+import { SEVERITY, SOURCE_KIND_LABEL } from '../lib/hazards'
 import { effectiveSeverity } from '../lib/sort'
 import { timeAgo } from '../lib/format'
-import { HazardBadge, SeverityChip, VerifyBadge } from './bits'
+import { HazardBadge, SeverityTag, VerifyBadge } from './bits'
 
 interface Props {
   incidents: Incident[]
   selectedId: string | null
   onSelect: (id: string) => void
 }
-
-const list = { hidden: {}, show: { transition: { staggerChildren: 0.05 } } }
-const item = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } },
-} as const
 
 export function IncidentFeed({ incidents, selectedId, onSelect }: Props) {
   const [now, setNow] = useState(() => Date.now())
@@ -26,53 +20,63 @@ export function IncidentFeed({ incidents, selectedId, onSelect }: Props) {
     return () => window.clearInterval(t)
   }, [])
 
+  // Id yang sudah tampil saat render pertama tidak diberi sorotan "baru"
+  const [firstIds] = useState(() => new Set(incidents.map((i) => i.id)))
+
   if (incidents.length === 0) {
-    return (
-      <div className="grid h-40 place-items-center px-6 text-center text-sm text-muted-fg">
-        Tidak ada kejadian untuk layer yang dipilih. Aktifkan jenis bahaya di panel Layer.
-      </div>
-    )
+    return <p className="px-4 py-10 text-center text-sm text-muted-fg">Tidak ada kejadian untuk layer yang dipilih. Aktifkan jenis bahaya di panel Layer.</p>
   }
 
   return (
-    <motion.ul variants={list} initial="hidden" animate="show" className="space-y-1.5 p-2" aria-label="Daftar kejadian aktif, urut dari severity tertinggi">
+    <ul className="divide-y divide-line" aria-label="Daftar kejadian aktif, urut dari severity tertinggi">
       <AnimatePresence initial={false}>
         {incidents.map((i) => {
           const sev = effectiveSeverity(i)
-          const countdown = i.dispatch?.state === 'countdown'
+          const color = SEVERITY[sev].color
+          const isNew = !firstIds.has(i.id)
+          const active = selectedId === i.id
           return (
             <motion.li
               key={i.id}
               layout="position"
-              variants={item}
-              initial="hidden"
-              animate="show"
-              exit={{ opacity: 0, x: 20, transition: { duration: 0.2 } }}
+              transition={{ layout: { type: 'spring', stiffness: 500, damping: 42 } }}
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0.12 } }}
             >
               <button
                 type="button"
                 onClick={() => onSelect(i.id)}
-                aria-current={selectedId === i.id ? 'true' : undefined}
-                className={`group flex w-full items-start gap-3 rounded-lg border p-2.5 text-left transition-colors duration-150 ${
-                  selectedId === i.id ? 'border-white/40 bg-white/10' : 'border-white/5 bg-card/60 hover:border-white/15 hover:bg-card'
-                } ${sev === 'critical' ? 'shadow-[inset_3px_0_0_#EF4444]' : ''}`}
+                aria-current={active ? 'true' : undefined}
+                className={`relative grid w-full grid-cols-[3px_32px_1fr] items-start gap-x-3 py-3 pr-4 text-left transition-colors duration-150 ${
+                  active ? 'bg-raised' : 'hover:bg-raised/70'
+                }`}
               >
-                <HazardBadge type={i.type} size={32} />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center gap-2">
-                    <SeverityChip severity={sev} />
-                    <span className="ml-auto shrink-0 font-mono text-[11px] text-muted-fg tabular">{timeAgo(i.reported_at, now)}</span>
+                {/* Kilatan sorot: penanda kejadian yang baru masuk */}
+                {isNew && (
+                  <motion.span
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0"
+                    style={{ background: color }}
+                    initial={{ opacity: 0.22 }}
+                    animate={{ opacity: 0 }}
+                    transition={{ duration: 1.8, ease: 'easeOut' }}
+                  />
+                )}
+                <span className="h-full self-stretch" style={{ background: sev === 'critical' || sev === 'high' ? color : 'transparent' }} aria-hidden />
+                <HazardBadge type={i.type} size={32} solid={sev === 'critical'} />
+                <span className="relative min-w-0">
+                  <span className="flex items-baseline gap-3">
+                    <SeverityTag severity={sev} />
+                    <span className="ml-auto shrink-0 text-xs text-muted-fg tabular">{timeAgo(i.reported_at, now)}</span>
                   </span>
-                  <span className="mt-1 block truncate text-sm font-medium text-fg">{i.title}</span>
-                  <span className="block truncate text-xs text-muted-fg">{i.address}</span>
+                  <span className="mt-0.5 block truncate text-[15px] font-semibold leading-snug text-fg">{i.title}</span>
+                  <span className="block truncate text-[13px] text-muted-fg">{i.address}</span>
                   <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span className="inline-flex items-center gap-1 text-[11px] text-muted-fg">
-                      <Radio size={12} aria-hidden />
-                      {SOURCE_KIND_LABEL[i.source.kind]}
-                    </span>
+                    <span className="text-xs text-dim">{SOURCE_KIND_LABEL[i.source.kind]}</span>
                     <VerifyBadge incident={i} />
-                    {countdown && (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#F87171]">
+                    {i.dispatch?.state === 'countdown' && (
+                      <span className="sign inline-flex items-center gap-1 text-[12px] text-sev-critical">
                         <Siren size={12} aria-hidden /> Hitung mundur 112
                       </span>
                     )}
@@ -83,6 +87,6 @@ export function IncidentFeed({ incidents, selectedId, onSelect }: Props) {
           )
         })}
       </AnimatePresence>
-    </motion.ul>
+    </ul>
   )
 }

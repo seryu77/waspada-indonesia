@@ -1,25 +1,28 @@
 import { motion } from 'motion/react'
-import { Bot, CircleCheck, CircleHelp, CircleX, Loader } from 'lucide-react'
+import { CircleCheck, CircleHelp, CircleX, Loader } from 'lucide-react'
 import type { HazardType, Incident, Severity } from '../types'
 import { HAZARDS, SEVERITY } from '../lib/hazards'
 
-export function HazardBadge({ type, size = 32 }: { type: HazardType; size?: number }) {
+/** Ikon jenis bahaya dalam kotak gelap bergaris warna, mirip pelat rambu. */
+export function HazardBadge({ type, size = 32, solid = false }: { type: HazardType; size?: number; solid?: boolean }) {
   const { Icon, color } = HAZARDS[type]
   return (
-    <span className="grid shrink-0 place-items-center rounded-full" style={{ width: size, height: size, background: color }} aria-hidden>
-      <Icon size={size * 0.5} color="#0F172A" strokeWidth={2.4} />
+    <span
+      className="grid shrink-0 place-items-center rounded-xs"
+      style={{ width: size, height: size, background: solid ? color : '#0B0D10', boxShadow: `inset 0 0 0 1.5px ${color}` }}
+      aria-hidden
+    >
+      <Icon size={size * 0.52} color={solid ? '#0B0D10' : color} strokeWidth={2.3} />
     </span>
   )
 }
 
-export function SeverityChip({ severity }: { severity: Severity }) {
+/** Severity sebagai teks rambu berwarna dengan blok kecil, tanpa pill. */
+export function SeverityTag({ severity }: { severity: Severity }) {
   const s = SEVERITY[severity]
   return (
-    <span
-      className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-wide"
-      style={{ color: s.color, background: `${s.color}1F`, boxShadow: `inset 0 0 0 1px ${s.color}55` }}
-    >
-      <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.color }} aria-hidden />
+    <span className="sign inline-flex items-center gap-1.5 text-[12px]" style={{ color: s.color }}>
+      <span className="h-2 w-2" style={{ background: s.color }} aria-hidden />
       {s.label}
     </span>
   )
@@ -28,42 +31,51 @@ export function SeverityChip({ severity }: { severity: Severity }) {
 export function VerifyBadge({ incident }: { incident: Incident }) {
   if (incident.verifying) {
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] text-sev-medium">
+      <span className="inline-flex items-center gap-1 text-xs text-sev-medium">
         <motion.span animate={{ rotate: 360 }} transition={{ duration: 1.2, repeat: Infinity, ease: 'linear' }} className="inline-flex" aria-hidden>
           <Loader size={12} />
         </motion.span>
-        Diverifikasi AI...
+        Diverifikasi AI
       </span>
     )
   }
   const v = incident.verification
-  // Data resmi tanpa verifikasi AI: label sumber di sebelahnya sudah cukup
+  // Data resmi tanpa verifikasi AI: label sumber sudah cukup
   if (!v) return null
   if (v.verdict === 'confirmed')
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] text-accent">
-        <CircleCheck size={12} aria-hidden /> Terverifikasi {Math.round(v.confidence * 100)}%
+      <span className="inline-flex items-center gap-1 text-xs text-accent">
+        <CircleCheck size={12} aria-hidden /> Terverifikasi <span className="tabular">{Math.round(v.confidence * 100)}%</span>
       </span>
     )
   if (v.verdict === 'false_alarm')
     return (
-      <span className="inline-flex items-center gap-1 text-[11px] text-muted-fg">
+      <span className="inline-flex items-center gap-1 text-xs text-muted-fg">
         <CircleX size={12} aria-hidden /> False alarm
       </span>
     )
   return (
-    <span className="inline-flex items-center gap-1 text-[11px] text-sev-medium">
-      <CircleHelp size={12} aria-hidden /> Butuh cek manual
+    <span className="inline-flex items-center gap-1 text-xs text-sev-medium">
+      <CircleHelp size={12} aria-hidden /> Cek manual
     </span>
   )
 }
 
-export function ModelTag({ model, simulated }: { model: string; simulated: boolean }) {
+/** Bar bersegmen 10 blok: dipakai untuk confidence. */
+export function SegmentBar({ value, color }: { value: number; color: string }) {
+  const filled = Math.round(value * 10)
   return (
-    <span className="inline-flex items-center gap-1 rounded-md bg-white/5 px-1.5 py-0.5 font-mono text-[11px] text-muted-fg">
-      <Bot size={12} aria-hidden />
-      {model}
-      {simulated && <span className="ml-1 rounded bg-sev-medium/15 px-1 text-sev-medium">simulasi</span>}
+    <span className="flex gap-0.5" role="img" aria-label={`${Math.round(value * 100)} persen`}>
+      {Array.from({ length: 10 }, (_, i) => (
+        <motion.span
+          key={i}
+          className="h-2.5 w-2"
+          initial={{ opacity: 0.25 }}
+          animate={{ opacity: i < filled ? 1 : 0.18 }}
+          transition={{ delay: i * 0.03, duration: 0.2 }}
+          style={{ background: i < filled ? color : '#5B626C' }}
+        />
+      ))}
     </span>
   )
 }

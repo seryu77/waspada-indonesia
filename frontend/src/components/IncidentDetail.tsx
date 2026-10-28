@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
-import { ArrowLeft, Bot, Cctv, Clock, LocateFixed, MapPin, Radio, TriangleAlert } from 'lucide-react'
+import { ArrowLeft, Bot, LocateFixed } from 'lucide-react'
 import type { Camera, Incident } from '../types'
-import { HAZARDS, SOURCE_KIND_LABEL } from '../lib/hazards'
+import { HAZARDS, SEVERITY, SOURCE_KIND_LABEL } from '../lib/hazards'
 import { effectiveSeverity } from '../lib/sort'
-import { coord, dateTimeWIB, pct, timeAgo } from '../lib/format'
-import { HazardBadge, ModelTag, SeverityChip, VerifyBadge } from './bits'
+import { coord, dateTimeWIB, timeAgo } from '../lib/format'
+import { HazardBadge, SegmentBar, SeverityTag, VerifyBadge } from './bits'
 import { DispatchTimeline } from './DispatchTimeline'
 
 interface Props {
@@ -16,16 +16,17 @@ interface Props {
   onCancel: () => Promise<void>
 }
 
-const VERDICT_LABEL = { confirmed: 'Terkonfirmasi', false_alarm: 'False alarm', uncertain: 'Belum pasti' } as const
+const VERDICT = {
+  confirmed: { label: 'Terkonfirmasi', color: '#3CCF7E' },
+  false_alarm: { label: 'False alarm', color: '#929AA4' },
+  uncertain: { label: 'Belum pasti', color: '#EAB308' },
+} as const
 
-function Row({ icon: Icon, label, children }: { icon: typeof Clock; label: string; children: ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex gap-2.5 py-1.5">
-      <Icon size={15} className="mt-0.5 shrink-0 text-muted-fg" aria-hidden />
-      <div className="min-w-0 text-sm">
-        <div className="text-[11px] text-muted-fg">{label}</div>
-        <div className="text-fg">{children}</div>
-      </div>
+    <div className="grid grid-cols-[88px_1fr] gap-3 border-t border-line py-2.5 text-[13px]">
+      <dt className="text-muted-fg">{label}</dt>
+      <dd className="min-w-0 text-fg">{children}</dd>
     </div>
   )
 }
@@ -34,125 +35,122 @@ export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm
   const v = i.verification
   const sev = effectiveSeverity(i)
   return (
-    <div className="space-y-3 p-3">
-      <div className="flex items-center gap-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-muted-fg transition-colors duration-150 hover:bg-white/10 hover:text-fg"
-        >
+    <article aria-labelledby="detail-title">
+      <div className="flex h-11 items-center justify-between border-b border-line pr-1">
+        <button type="button" onClick={onBack} className="flex h-11 items-center gap-2 px-3 text-sm font-semibold text-dim transition-colors duration-150 hover:text-fg">
           <ArrowLeft size={16} aria-hidden /> Semua kejadian
         </button>
         <button
           type="button"
           onClick={onFocus}
           aria-label="Pusatkan peta ke lokasi kejadian"
-          className="ml-auto grid h-9 w-9 place-items-center rounded-lg text-muted-fg transition-colors duration-150 hover:bg-white/10 hover:text-fg"
+          title="Pusatkan peta"
+          className="grid h-9 w-9 place-items-center text-dim transition-colors duration-150 hover:bg-raised hover:text-fg"
         >
           <LocateFixed size={16} aria-hidden />
         </button>
       </div>
 
-      <div className="flex items-start gap-3">
-        <HazardBadge type={i.type} size={40} />
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <SeverityChip severity={sev} />
-            <span className="text-xs text-muted-fg">{HAZARDS[i.type].label}</span>
+      <header className="relative px-4 pb-4 pt-4">
+        <span className="absolute inset-y-4 left-0 w-[3px]" style={{ background: SEVERITY[sev].color }} aria-hidden />
+        <div className="flex items-center gap-3">
+          <HazardBadge type={i.type} size={36} solid={sev === 'critical'} />
+          <div>
+            <SeverityTag severity={sev} />
+            <p className="sign text-[12px]" style={{ color: HAZARDS[i.type].color }}>
+              {HAZARDS[i.type].label}
+            </p>
           </div>
-          <h2 className="mt-1 text-base font-semibold leading-snug">{i.title}</h2>
         </div>
-      </div>
-      <p className="text-sm leading-relaxed text-[#CBD5E1]">{i.description}</p>
+        <h2 id="detail-title" className="mt-3 font-display text-[24px] font-semibold leading-tight">
+          {i.title}
+        </h2>
+        <p className="mt-1.5 text-sm leading-relaxed text-dim">{i.description}</p>
+      </header>
 
-      <div className="divide-y divide-white/5 rounded-xl border border-white/10 bg-card/70 px-3 py-1">
-        <Row icon={MapPin} label="Lokasi">
+      <dl className="px-4 pb-2">
+        <Field label="Lokasi">
           {i.address}
-          <span className="block font-mono text-[11px] text-muted-fg tabular">{coord(i.lat, i.lng)}</span>
-        </Row>
-        <Row icon={Radio} label="Sumber data">
+          <span className="block text-xs text-muted-fg tabular">{coord(i.lat, i.lng)}</span>
+        </Field>
+        <Field label="Sumber">
           {i.source.label}
-          <span className="block text-[11px] text-muted-fg">{SOURCE_KIND_LABEL[i.source.kind]}</span>
-        </Row>
-        <Row icon={Clock} label="Waktu laporan">
-          {dateTimeWIB(i.reported_at)} <span className="text-muted-fg">({timeAgo(i.reported_at)})</span>
-        </Row>
+          <span className="block text-xs text-muted-fg">{SOURCE_KIND_LABEL[i.source.kind]}</span>
+        </Field>
+        <Field label="Dilaporkan">
+          <span className="tabular">{dateTimeWIB(i.reported_at)}</span> <span className="text-muted-fg">({timeAgo(i.reported_at)})</span>
+        </Field>
         {i.magnitude !== undefined && (
-          <Row icon={TriangleAlert} label="Magnitudo">
-            M {i.magnitude.toFixed(1).replace('.', ',')}
-          </Row>
+          <Field label="Magnitudo">
+            <span className="tabular">M {i.magnitude.toFixed(1).replace('.', ',')}</span>
+          </Field>
         )}
         {camera && (
-          <Row icon={Cctv} label="Kamera">
+          <Field label="Kamera">
             {camera.name}, {camera.city}
-            <span className="block text-[11px] text-muted-fg">
-              {camera.status === 'online' ? 'Online' : 'Offline'} - {camera.detections_today} deteksi hari ini
+            <span className="block text-xs text-muted-fg">
+              {camera.status === 'online' ? 'Online' : 'Offline'}, <span className="tabular">{camera.detections_today}</span> deteksi hari ini
             </span>
-          </Row>
+          </Field>
         )}
-      </div>
+      </dl>
 
       {i.evidence && i.evidence.length > 0 && (
-        <section aria-label="Frame bukti">
-          <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-fg">Frame bukti (wajah dan plat diblur)</h3>
-          <div className="grid grid-cols-2 gap-1.5">
+        <section aria-labelledby="ev-h" className="border-t border-line px-4 py-4">
+          <h3 id="ev-h" className="sign mb-2 text-[13px] text-muted-fg">
+            Frame bukti <span className="normal-case tracking-normal">(wajah dan plat diblur)</span>
+          </h3>
+          <div className="grid grid-cols-2 gap-1">
             {i.evidence.slice(0, 4).map((src, idx) => (
-              <img key={src} src={src} alt={`Frame bukti ${idx + 1}`} className="aspect-video w-full rounded-md object-cover" loading="lazy" />
+              <img key={src} src={src} alt={`Frame bukti ${idx + 1}`} className="aspect-video w-full object-cover" loading="lazy" />
             ))}
           </div>
         </section>
       )}
 
-      <section aria-labelledby="ai-h" className="rounded-xl border border-white/10 bg-card/70 p-3">
-        <div className="flex items-center gap-2">
-          <Bot size={16} className="text-fg" aria-hidden />
-          <h3 id="ai-h" className="font-mono text-sm font-semibold">
+      <section aria-labelledby="ai-h" className="border-t border-line px-4 py-4">
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 id="ai-h" className="sign text-[13px] text-muted-fg">
             Verifikasi AI
           </h3>
-          <span className="ml-auto">
-            <VerifyBadge incident={i} />
-          </span>
+          {!v && <VerifyBadge incident={i} />}
         </div>
         {v ? (
-          <div className="mt-2 space-y-2">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div>
-                <div className="text-[11px] text-muted-fg">Verdict</div>
-                <div className="font-medium">{VERDICT_LABEL[v.verdict]}</div>
-              </div>
-              <div>
-                <div className="text-[11px] text-muted-fg">Confidence</div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono font-medium tabular">{pct(v.confidence)}</span>
-                  <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10">
-                    <span
-                      className="block h-full origin-left rounded-full"
-                      style={{ transform: `scaleX(${v.confidence})`, background: v.confidence >= 0.8 ? '#22C55E' : v.confidence >= 0.5 ? '#EAB308' : '#94A3B8' }}
-                    />
-                  </span>
+          <>
+            <div className="mt-2 flex items-end justify-between gap-4">
+              <p className="font-display text-[26px] font-bold uppercase leading-none" style={{ color: VERDICT[v.verdict].color }}>
+                {VERDICT[v.verdict].label}
+              </p>
+              <div className="text-right">
+                <p className="font-display text-[26px] font-bold leading-none tabular">
+                  {Math.round(v.confidence * 100)}
+                  <span className="text-base text-muted-fg">%</span>
+                </p>
+                <div className="mt-1.5">
+                  <SegmentBar value={v.confidence} color={v.confidence >= 0.8 ? '#3CCF7E' : v.confidence >= 0.5 ? '#EAB308' : '#929AA4'} />
                 </div>
               </div>
             </div>
-            <p className="text-sm leading-relaxed text-[#CBD5E1]">{v.reasoning}</p>
-            <div className="text-xs text-muted-fg">
-              Rekomendasi instansi: <span className="text-fg">{v.recommended_agency}</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <ModelTag model={v.model} simulated={v.simulated} />
-              <span className="text-[11px] text-muted-fg">tahap {v.stage === 'verify' ? '2 (verifikasi final)' : '1 (filter cepat)'}</span>
-            </div>
-            {v.needs_manual_review && (
-              <p className="rounded-lg bg-sev-medium/10 px-2.5 py-2 text-xs text-sev-medium">Butuh cek manual operator sebelum diteruskan ke 112.</p>
-            )}
-          </div>
+            <p className="mt-3 text-sm leading-relaxed text-dim">{v.reasoning}</p>
+            <dl className="mt-3">
+              <Field label="Rekomendasi">{v.recommended_agency}</Field>
+              <Field label="Model">
+                <span className="inline-flex flex-wrap items-center gap-x-2">
+                  <Bot size={13} className="text-muted-fg" aria-hidden />
+                  {v.model}
+                  {v.simulated && <span className="sign text-[11px] text-sev-medium">Simulasi</span>}
+                </span>
+                <span className="block text-xs text-muted-fg">{v.stage === 'verify' ? 'Tahap 2, verifikasi final' : 'Tahap 1, filter cepat'}</span>
+              </Field>
+            </dl>
+            {v.needs_manual_review && <p className="mt-3 border-l-2 border-sev-medium pl-3 text-sm text-sev-medium">Butuh cek manual operator sebelum diteruskan ke 112.</p>}
+          </>
         ) : (
-          <p className="mt-2 text-sm text-muted-fg">
-            {i.verifying ? 'Sedang diverifikasi (tahap 1: filter cepat).' : 'Data dari sumber resmi, tidak melalui verifikasi AI.'}
-          </p>
+          <p className="mt-2 text-sm text-dim">{i.verifying ? 'Sedang diverifikasi, tahap 1 filter cepat.' : 'Data dari sumber resmi, tidak melalui verifikasi AI.'}</p>
         )}
       </section>
 
       {i.dispatch && <DispatchTimeline dispatch={i.dispatch} onConfirm={onConfirm} onCancel={onCancel} />}
-    </div>
+    </article>
   )
 }

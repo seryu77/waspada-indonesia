@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Ban, Bot, CircleCheck, CircleX, Send, Server, Siren, UserRound } from 'lucide-react'
+import { Ban, CircleCheck, CircleX, Send } from 'lucide-react'
 import type { Actor, Dispatch } from '../types'
 import { clockWIB } from '../lib/format'
 
@@ -10,11 +10,7 @@ interface Props {
   onCancel: () => Promise<void>
 }
 
-const ACTOR: Record<Actor, { Icon: typeof Bot; label: string }> = {
-  ai: { Icon: Bot, label: 'AI' },
-  operator: { Icon: UserRound, label: 'Operator' },
-  system: { Icon: Server, label: 'Sistem' },
-}
+const ACTOR: Record<Actor, string> = { ai: 'AI', operator: 'Operator', system: 'Sistem' }
 
 function useRemaining(deadline?: string) {
   const [now, setNow] = useState(() => Date.now())
@@ -31,6 +27,8 @@ export function DispatchTimeline({ dispatch, onConfirm, onCancel }: Props) {
   const [busy, setBusy] = useState<'confirm' | 'cancel' | null>(null)
   const total = dispatch.countdown_s ?? 45
   const counting = dispatch.state === 'countdown'
+  const secs = Math.ceil(remaining)
+  const urgent = counting && secs <= 10
 
   const run = async (kind: 'confirm' | 'cancel') => {
     setBusy(kind)
@@ -42,99 +40,109 @@ export function DispatchTimeline({ dispatch, onConfirm, onCancel }: Props) {
   }
 
   return (
-    <section aria-labelledby="dispatch-h" className="rounded-xl border border-white/10 bg-card/70 p-3">
-      <div className="flex items-center gap-2">
-        <Siren size={16} className="text-[#F87171]" aria-hidden />
-        <h3 id="dispatch-h" className="font-mono text-sm font-semibold">
+    <section aria-labelledby="dispatch-h" className="border-t border-line px-4 py-4">
+      <div className="flex items-baseline justify-between gap-3">
+        <h3 id="dispatch-h" className="sign text-[13px] text-muted-fg">
           Dispatch 112
         </h3>
-        <span className="ml-auto rounded-md bg-white/5 px-1.5 py-0.5 font-mono text-[11px] text-muted-fg">
-          {dispatch.mode === 'simulate' ? 'mode simulasi' : 'webhook command center'}
-        </span>
+        <span className="text-xs text-muted-fg">{dispatch.mode === 'simulate' ? 'Mode simulasi' : 'Webhook command center'}</span>
       </div>
-      <p className="mt-1 text-xs text-muted-fg">
-        Instansi tujuan: <span className="text-fg">{dispatch.agency}</span>
+      <p className="mt-1 text-sm text-dim">
+        Ke <span className="font-semibold text-fg">{dispatch.agency}</span>
       </p>
 
       <AnimatePresence mode="wait" initial={false}>
         {counting ? (
-          <motion.div key="cd" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.25 }} className="mt-3">
+          <motion.div key="cd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.1 } }} className="mt-3">
             <div className="flex items-end justify-between">
-              <span className="text-xs text-muted-fg">Terkirim otomatis dalam</span>
-              <span className="font-mono text-2xl font-semibold text-[#F87171] tabular" aria-live="off">
-                {remaining > 0 ? `${Math.ceil(remaining)} dtk` : 'Mengirim...'}
-              </span>
+              <span className="text-sm text-dim">Terkirim otomatis dalam</span>
+              <motion.span
+                className="font-display text-[44px] font-bold leading-none tabular"
+                animate={{ color: urgent ? '#F2555A' : '#E9EBEE' }}
+                transition={{ duration: 0.3 }}
+                aria-live="off"
+              >
+                {remaining > 0 ? (
+                  <>
+                    {secs}
+                    <span className="ml-1 text-lg font-semibold text-muted-fg">dtk</span>
+                  </>
+                ) : (
+                  <span className="text-2xl">Mengirim</span>
+                )}
+              </motion.span>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10" role="progressbar" aria-label="Sisa hitung mundur" aria-valuemin={0} aria-valuemax={total} aria-valuenow={Math.ceil(remaining)}>
-              <div className="h-full origin-left rounded-full bg-danger" style={{ transform: `scaleX(${remaining / total})` }} />
+            <div
+              className="relative mt-2 h-2 overflow-hidden bg-line"
+              role="progressbar"
+              aria-label="Sisa hitung mundur"
+              aria-valuemin={0}
+              aria-valuemax={total}
+              aria-valuenow={secs}
+            >
+              <div className="ticks absolute inset-0 origin-left bg-sev-critical" style={{ transform: `scaleX(${remaining / total})` }} />
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
+            <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
               <button
                 type="button"
                 disabled={busy !== null}
                 onClick={() => run('confirm')}
-                className="flex h-10 items-center justify-center gap-2 rounded-lg bg-[#DC2626] text-sm font-semibold text-white transition-colors duration-150 hover:bg-[#B91C1C] disabled:opacity-60"
+                className="flex h-11 items-center justify-center gap-2 rounded-sm bg-alarm text-white transition-colors duration-150 hover:bg-alarm-hover disabled:opacity-60"
               >
                 <Send size={16} aria-hidden />
-                Kirim sekarang
+                <span className="sign text-[15px]">Kirim sekarang</span>
               </button>
               <button
                 type="button"
                 disabled={busy !== null}
                 onClick={() => run('cancel')}
-                className="flex h-10 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white/5 text-sm font-medium transition-colors duration-150 hover:bg-white/10 disabled:opacity-60"
+                className="flex h-11 items-center justify-center gap-2 rounded-sm border border-line-strong px-4 text-dim transition-colors duration-150 hover:border-fg hover:text-fg disabled:opacity-60"
               >
                 <Ban size={16} aria-hidden />
-                Batalkan
+                <span className="sign text-[15px]">Batalkan</span>
               </button>
             </div>
-            <p className="mt-2 text-[11px] leading-snug text-muted-fg">
-              Operator tetap memegang keputusan. Tanpa aksi, payload diteruskan ke command center. Kode ini tidak pernah menelepon 112 secara langsung.
+            <p className="mt-2 text-xs leading-relaxed text-muted-fg">
+              Operator memegang keputusan akhir. Tanpa aksi, payload diteruskan ke command center. Sistem ini tidak pernah menelepon 112 secara langsung.
             </p>
           </motion.div>
         ) : (
           <motion.div
             key={dispatch.state}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className={`mt-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium ${
-              dispatch.state === 'sent' ? 'bg-accent/10 text-accent' : 'bg-white/5 text-muted-fg'
-            }`}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
+            className="mt-3 flex items-center gap-2 border-l-2 py-1 pl-3"
+            style={{ borderColor: dispatch.state === 'sent' ? '#3CCF7E' : '#5B626C' }}
             role="status"
           >
-            {dispatch.state === 'sent' ? <CircleCheck size={16} aria-hidden /> : <CircleX size={16} aria-hidden />}
-            {dispatch.state === 'sent'
-              ? `Terkirim${dispatch.sent_at ? ` pukul ${clockWIB(dispatch.sent_at)}` : ''}`
-              : dispatch.state === 'cancelled'
-                ? 'Dibatalkan operator'
-                : 'Gagal terkirim, perlu tindak lanjut manual'}
+            {dispatch.state === 'sent' ? <CircleCheck size={18} className="text-accent" aria-hidden /> : <CircleX size={18} className="text-muted-fg" aria-hidden />}
+            <span className="sign text-[15px]" style={{ color: dispatch.state === 'sent' ? '#3CCF7E' : '#C3C8CF' }}>
+              {dispatch.state === 'sent' ? 'Terkirim' : dispatch.state === 'cancelled' ? 'Dibatalkan operator' : 'Gagal terkirim'}
+            </span>
+            {dispatch.state === 'sent' && dispatch.sent_at && <span className="ml-auto text-xs text-muted-fg tabular">{clockWIB(dispatch.sent_at)}</span>}
           </motion.div>
         )}
       </AnimatePresence>
 
       {dispatch.timeline.length > 0 && (
-        <ol className="mt-3 space-y-2 border-l border-white/10 pl-3" aria-label="Timeline keputusan">
+        <ol className="mt-4" aria-label="Timeline keputusan">
           <AnimatePresence initial={false}>
-            {dispatch.timeline.map((t, idx) => {
-              const a = ACTOR[t.actor]
-              return (
-                <motion.li
-                  key={`${t.at}-${t.action}-${idx}`}
-                  initial={{ opacity: 0, x: -6 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.25 }}
-                  className="relative text-xs"
-                >
-                  <span className="absolute -left-[19px] top-0.5 grid h-3.5 w-3.5 place-items-center rounded-full bg-bg ring-1 ring-white/20" aria-hidden>
-                    <a.Icon size={9} />
-                  </span>
-                  <span className="font-mono text-[11px] text-muted-fg tabular">{clockWIB(t.at)}</span>
-                  <span className="ml-2 font-medium">{a.label}</span>
-                  <span className="block text-muted-fg">{t.note}</span>
-                </motion.li>
-              )
-            })}
+            {dispatch.timeline.map((t, idx) => (
+              <motion.li
+                key={`${t.at}-${t.action}-${idx}`}
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.2 }}
+                className="grid grid-cols-[76px_1fr] gap-3 border-t border-line py-2 text-[13px]"
+              >
+                <span className="text-muted-fg tabular">{clockWIB(t.at).replace(' WIB', '')}</span>
+                <span>
+                  <span className="sign mr-2 text-[12px] text-dim">{ACTOR[t.actor]}</span>
+                  <span className="text-fg">{t.note}</span>
+                </span>
+              </motion.li>
+            ))}
           </AnimatePresence>
         </ol>
       )}

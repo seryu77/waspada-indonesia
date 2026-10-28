@@ -11,38 +11,49 @@ interface Props {
   onDismiss: (id: string) => void
 }
 
+const LIFE_MS = 9000
+
 function ToastItem({ inc, onOpen, onDismiss }: { inc: Incident; onOpen: (id: string) => void; onDismiss: (id: string) => void }) {
   useEffect(() => {
-    const t = window.setTimeout(() => onDismiss(inc.id), 9000)
+    const t = window.setTimeout(() => onDismiss(inc.id), LIFE_MS)
     return () => window.clearTimeout(t)
   }, [inc.id, onDismiss])
   return (
     <motion.li
       layout
-      initial={{ opacity: 0, y: -16, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -12, scale: 0.96, transition: { duration: 0.2 } }}
-      transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-      className="glass-strong pointer-events-auto flex w-full items-start gap-3 rounded-xl p-3 shadow-[inset_3px_0_0_#EF4444,0_8px_24px_rgb(0_0_0/0.4)]"
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: 24, transition: { duration: 0.15 } }}
+      transition={{ type: 'spring', stiffness: 520, damping: 38 }}
+      className="pointer-events-auto relative w-full overflow-hidden border border-line-strong bg-panel shadow-[0_12px_32px_rgb(0_0_0/0.5)]"
     >
-      <HazardBadge type={inc.type} size={30} />
-      <button type="button" onClick={() => onOpen(inc.id)} className="min-w-0 flex-1 text-left">
-        <span className="block font-mono text-[11px] font-semibold uppercase tracking-wider text-[#F87171]">Kejadian kritis baru</span>
-        <span className="block truncate text-sm font-medium">
-          {HAZARDS[inc.type].label}: {inc.title}
-        </span>
-        <span className="block truncate text-xs text-muted-fg">{inc.address}</span>
-      </button>
-      <button type="button" onClick={() => onDismiss(inc.id)} aria-label="Tutup notifikasi" className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-fg hover:bg-white/10 hover:text-fg">
-        <X size={16} aria-hidden />
-      </button>
+      <div className="flex items-start gap-3 py-3 pl-4 pr-2">
+        <span className="absolute inset-y-0 left-0 w-1 bg-sev-critical" aria-hidden />
+        <HazardBadge type={inc.type} size={30} solid />
+        <button type="button" onClick={() => onOpen(inc.id)} className="min-w-0 flex-1 text-left">
+          <span className="sign block text-[12px] text-sev-critical">Kritis baru, {HAZARDS[inc.type].label}</span>
+          <span className="block truncate text-[15px] font-semibold">{inc.title}</span>
+          <span className="block truncate text-[13px] text-muted-fg">{inc.address}</span>
+        </button>
+        <button type="button" onClick={() => onDismiss(inc.id)} aria-label="Tutup notifikasi" className="grid h-9 w-9 shrink-0 place-items-center text-muted-fg hover:bg-raised hover:text-fg">
+          <X size={16} aria-hidden />
+        </button>
+      </div>
+      {/* Sisa umur notifikasi */}
+      <motion.span
+        aria-hidden
+        className="absolute bottom-0 left-0 h-0.5 w-full origin-left bg-sev-critical/60"
+        initial={{ scaleX: 1 }}
+        animate={{ scaleX: 0 }}
+        transition={{ duration: LIFE_MS / 1000, ease: 'linear' }}
+      />
     </motion.li>
   )
 }
 
 export function Toasts({ toasts, onOpen, onDismiss }: Props) {
   return (
-    <ol aria-live="assertive" aria-label="Notifikasi kejadian kritis" className="pointer-events-none flex w-full max-w-sm flex-col gap-2">
+    <ol aria-live="assertive" aria-label="Notifikasi kejadian kritis" className="pointer-events-none flex w-full max-w-[400px] flex-col gap-2">
       <AnimatePresence initial={false}>
         {toasts.map((t) => (
           <ToastItem key={t.id} inc={t} onOpen={onOpen} onDismiss={onDismiss} />

@@ -1,25 +1,32 @@
 @import 'tailwindcss';
 @import 'leaflet/dist/leaflet.css';
 
-/* Token dari design-system/waspada-nusantara/MASTER.md */
+/*
+  Token: design-system/waspada-nusantara/pages/map.md (override MASTER.md)
+  Arah: konsol operasi padat. Panel solid menempel ke tepi, garis tipis, sudut hampir siku,
+  tipografi ala rambu jalan (Barlow), warna sinyal hanya untuk bahaya dan status.
+*/
 @theme {
-  --font-sans: 'Fira Sans', ui-sans-serif, system-ui, sans-serif;
-  --font-mono: 'Fira Code', ui-monospace, monospace;
+  --font-sans: 'Barlow', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Barlow Condensed', 'Barlow', ui-sans-serif, sans-serif;
 
-  --color-bg: #0f172a;
-  --color-card: #1b2336;
-  --color-muted: #272f42;
-  --color-muted-fg: #94a3b8;
-  --color-border: #475569;
-  --color-fg: #f8fafc;
-  --color-primary: #1e293b;
-  --color-secondary: #334155;
-  --color-accent: #22c55e;
-  --color-on-accent: #0f172a;
-  --color-danger: #ef4444;
+  --color-bg: #0b0d10;
+  --color-panel: #111419;
+  --color-raised: #181c22;
+  --color-line: #252a32;
+  --color-line-strong: #353c47;
+  --color-fg: #e9ebee;
+  --color-dim: #c3c8cf;
+  --color-muted-fg: #929aa4;
+
+  --color-accent: #3ccf7e;
+  --color-on-accent: #07140d;
+  --color-danger: #e5484d;
+  --color-alarm: #d92d20;
+  --color-alarm-hover: #b42318;
   --color-ring: #ffffff;
 
-  /* Jenis bahaya: kontras >= 4.5:1 terhadap --color-bg */
+  /* Jenis bahaya: kontras >= 4.5:1 terhadap --color-panel */
   --color-hz-fire: #fb923c;
   --color-hz-flood: #38bdf8;
   --color-hz-crime: #c084fc;
@@ -29,14 +36,14 @@
   --color-hz-volcano: #f87171;
 
   /* Severity */
-  --color-sev-critical: #ef4444;
+  --color-sev-critical: #f2555a;
   --color-sev-high: #f97316;
   --color-sev-medium: #eab308;
-  --color-sev-low: #94a3b8;
+  --color-sev-low: #929aa4;
 
-  /* Rute */
-  --color-route-blocked: #facc15;
-  --color-route-danger: #ef4444;
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 6px;
 }
 
 @layer base {
@@ -47,13 +54,14 @@
   }
   body {
     @apply bg-bg font-sans text-fg antialiased;
+    font-size: 14px;
     overflow: hidden;
     overscroll-behavior: none;
+    font-feature-settings: 'tnum' 1;
   }
   :focus-visible {
     outline: 2px solid var(--color-ring);
     outline-offset: 2px;
-    border-radius: 6px;
   }
   button,
   [role='button'],
@@ -69,61 +77,79 @@
 }
 
 @layer components {
-  .glass {
-    background: rgb(15 23 42 / 0.78);
-    backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
-    border: 1px solid rgb(255 255 255 / 0.12);
-  }
-  .glass-strong {
-    background: rgb(15 23 42 / 0.9);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
-    border: 1px solid rgb(255 255 255 / 0.14);
+  /* Label rambu: huruf kapital, rapat, untuk judul seksi dan status */
+  .sign {
+    font-family: var(--font-display);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
   }
   .tabular {
     font-variant-numeric: tabular-nums;
   }
   .scroll-thin {
     scrollbar-width: thin;
-    scrollbar-color: #475569 transparent;
+    scrollbar-color: #353c47 transparent;
   }
   .sr-only-focusable:not(:focus):not(:focus-within) {
     @apply sr-only;
   }
+  .check {
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    border: 1.5px solid var(--color-line-strong);
+    border-radius: var(--radius-xs);
+    background: transparent;
+    display: grid;
+    place-items: center;
+    transition: background-color 150ms, border-color 150ms;
+  }
+  .check:checked {
+    background: var(--color-fg);
+    border-color: var(--color-fg);
+  }
+  .check:checked::after {
+    content: '';
+    width: 7px;
+    height: 4px;
+    border-left: 2px solid var(--color-bg);
+    border-bottom: 2px solid var(--color-bg);
+    transform: translateY(-1px) rotate(-45deg);
+  }
+  /* Bar progres bersegmen (hitung mundur, confidence) */
+  .ticks {
+    background-image: repeating-linear-gradient(90deg, transparent 0 calc(10% - 2px), var(--color-panel) calc(10% - 2px) 10%);
+  }
 }
 
-/* Leaflet gelap */
+/* Leaflet */
 .leaflet-container {
-  background: #0b1222;
+  background: #0b0d10;
   font-family: var(--font-sans);
 }
 .leaflet-control-attribution {
-  background: rgb(15 23 42 / 0.7) !important;
-  color: #94a3b8 !important;
+  background: rgb(11 13 16 / 0.85) !important;
+  color: #929aa4 !important;
   font-size: 10px;
 }
 .leaflet-control-attribution a {
-  color: #cbd5e1 !important;
+  color: #c3c8cf !important;
 }
 .leaflet-div-icon.wn-marker {
   background: transparent;
   border: 0;
 }
 .leaflet-tooltip.wn-tooltip {
-  background: #1b2336;
-  color: #f8fafc;
-  border: 1px solid #475569;
-  border-radius: 8px;
+  background: #111419;
+  color: #e9ebee;
+  border: 1px solid #353c47;
+  border-radius: 3px;
   font-size: 12px;
   padding: 4px 8px;
   box-shadow: none;
 }
 .leaflet-tooltip.wn-tooltip::before {
   display: none;
-}
-.leaflet-control-zoom a {
-  background: #1b2336 !important;
-  color: #f8fafc !important;
-  border-color: #475569 !important;
 }

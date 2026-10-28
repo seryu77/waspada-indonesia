@@ -16,10 +16,11 @@ interface Props {
   header?: ReactNode
 }
 
+// Feed -> detail bergeser ke kiri (masuk lebih dalam), detail -> feed sebaliknya. Keluar lebih cepat dari masuk.
 const slide = {
-  initial: (dir: number) => ({ opacity: 0, x: dir * 28 }),
-  animate: { opacity: 1, x: 0 },
-  exit: (dir: number) => ({ opacity: 0, x: dir * -28 }),
+  initial: (dir: number) => ({ opacity: 0, x: dir * 20 }),
+  animate: { opacity: 1, x: 0, transition: { duration: 0.22, ease: [0.2, 0.8, 0.2, 1] } },
+  exit: (dir: number) => ({ opacity: 0, x: dir * -12, transition: { duration: 0.12 } }),
 }
 
 /** Isi panel kanan: feed atau detail, dengan transisi geser. */
@@ -35,7 +36,6 @@ export function IncidentPanel({ incidents, selected, cameras, onSelect, onBack, 
           initial="initial"
           animate="animate"
           exit="exit"
-          transition={{ type: 'spring', stiffness: 420, damping: 36 }}
         >
           <IncidentDetail
             incident={selected}
@@ -47,7 +47,7 @@ export function IncidentPanel({ incidents, selected, cameras, onSelect, onBack, 
           />
         </motion.div>
       ) : (
-        <motion.div key="feed" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit" transition={{ type: 'spring', stiffness: 420, damping: 36 }}>
+        <motion.div key="feed" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
           {header}
           <IncidentFeed incidents={incidents} selectedId={null} onSelect={onSelect} />
         </motion.div>

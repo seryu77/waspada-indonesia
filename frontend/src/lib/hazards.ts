@@ -20,7 +20,7 @@ export const HAZARDS: Record<HazardType, HazardMeta> = {
 export const HAZARD_ORDER: HazardType[] = ['fire', 'flood', 'earthquake', 'landslide', 'accident', 'volcano', 'crime']
 
 export const SEVERITY: Record<Severity, { label: string; color: string; rank: number }> = {
-  critical: { label: 'Kritis', color: '#EF4444', rank: 4 },
+  critical: { label: 'Kritis', color: '#F2555A', rank: 4 },
   high: { label: 'Tinggi', color: '#F97316', rank: 3 },
   medium: { label: 'Sedang', color: '#EAB308', rank: 2 },
   low: { label: 'Rendah', color: '#94A3B8', rank: 1 },
