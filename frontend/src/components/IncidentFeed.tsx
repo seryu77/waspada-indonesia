@@ -20,7 +20,7 @@ const item = {
 } as const
 
 export function IncidentFeed({ incidents, selectedId, onSelect }: Props) {
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 15_000)
     return () => window.clearInterval(t)

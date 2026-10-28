@@ -4,6 +4,7 @@ import asyncio
 import logging
 import random
 import uuid
+from datetime import datetime, timezone
 
 from .config import settings
 from .hub import hub
@@ -13,6 +14,8 @@ from .pipeline import process_candidate
 
 log = logging.getLogger("waspada.simulator")
 SEVERITIES = ["critical", "critical", "high", "high", "medium", "low"]
+SIM_TTL_S = 8 * 60  # kejadian simulasi selesai otomatis supaya peta tidak menumpuk
+SIM_MAX_ACTIVE = 12
 
 
 _bag: list[dict] = []
@@ -53,9 +56,26 @@ async def spawn(templates: list[dict], severity: str | None = None, cctv_only: b
     return inc
 
 
+async def _expire_old() -> None:
+    """Tandai selesai: kejadian simulasi yang lebih tua dari SIM_TTL_S, lalu sisakan SIM_MAX_ACTIVE terbaru."""
+    now = datetime.now(timezone.utc)
+    sims = sorted(
+        (i for i in hub.incidents.values() if i.id.startswith("sim-") and i.status == "active"),
+        key=lambda i: i.reported_at,
+        reverse=True,
+    )
+    for idx, inc in enumerate(sims):
+        old = (now - datetime.fromisoformat(inc.reported_at)).total_seconds() > SIM_TTL_S
+        counting = inc.dispatch is not None and inc.dispatch.state == "countdown"
+        if (old or idx >= SIM_MAX_ACTIVE) and not counting:
+            inc.status = "resolved"
+            await hub.upsert_incident(inc)
+
+
 async def run_simulator(templates: list[dict]) -> None:
     await asyncio.sleep(8)
     while True:
+        await _expire_old()
         await spawn(templates)
         await asyncio.sleep(random.uniform(settings.simulator_min_s, settings.simulator_max_s))
 

@@ -14,6 +14,8 @@ export function IncidentMarker({ incident, selected, onSelect }: Props) {
   const meta = HAZARDS[incident.type]
   const sev = effectiveSeverity(incident)
   const critical = sev === 'critical'
+  // Pulse hanya untuk kejadian kritis yang belum ditangani (belum terkirim/dibatalkan)
+  const handled = incident.dispatch?.state === 'sent' || incident.dispatch?.state === 'cancelled'
   const size = critical ? 34 : sev === 'high' ? 30 : 26
   const Icon = meta.Icon
 
@@ -29,7 +31,7 @@ export function IncidentMarker({ incident, selected, onSelect }: Props) {
       className="relative grid place-items-center rounded-full"
       style={{ width: size, height: size }}
     >
-      {critical && !reduce && (
+      {critical && !handled && !reduce && (
         <motion.span
           aria-hidden
           className="absolute inset-0 rounded-full"

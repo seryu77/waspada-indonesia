@@ -41,6 +41,7 @@ export default function GoogleMapView(p: MapProps) {
         defaultCenter={INDONESIA_CENTER}
         defaultZoom={zoom0}
         minZoom={Math.floor(zoom0)}
+        maxZoom={12}
         restriction={{ latLngBounds: INDONESIA_BOUNDS, strictBounds: true }}
         disableDefaultUI
         zoomControl

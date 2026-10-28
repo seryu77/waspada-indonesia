@@ -48,7 +48,9 @@ export function useLiveData(): LiveData {
   const seenIds = useRef<Set<string>>(new Set(snapshot.incidents.map((i) => i.id)))
   const lastMsgAt = useRef<number>(0)
   const connectionRef = useRef<Connection>('connecting')
-  connectionRef.current = connection
+  useEffect(() => {
+    connectionRef.current = connection
+  }, [connection])
   const offline = connection === 'offline'
 
   const notifyIfNewCritical = useCallback((inc: Incident) => {
@@ -147,6 +149,19 @@ export function useLiveData(): LiveData {
     let timer: number
     const verifyTimers: number[] = []
     const tick = () => {
+      // Sama seperti backend: kejadian simulasi selesai setelah 8 menit, maksimal 12 aktif
+      setSnapshot((snap) => {
+        const sims = snap.incidents
+          .filter((i) => i.id.startsWith('sim-') && i.status === 'active')
+          .sort((a, b) => b.reported_at.localeCompare(a.reported_at))
+        const expire = new Set(
+          sims
+            .filter((i, idx) => (idx >= 12 || Date.now() - Date.parse(i.reported_at) > 8 * 60_000) && i.dispatch?.state !== 'countdown')
+            .map((i) => i.id),
+        )
+        if (expire.size === 0) return snap
+        return { ...snap, incidents: snap.incidents.map((i) => (expire.has(i.id) ? { ...i, status: 'resolved' } : i)) }
+      })
       verifyTimers.push(spawnLocal())
       timer = window.setTimeout(tick, 20_000 + Math.random() * 10_000)
     }

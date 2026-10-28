@@ -195,7 +195,7 @@ Tombol **Hubungi 112** di top bar adalah tautan `tel:112` untuk warga.
 
 ## Pipeline CCTV + computer vision
 
-Aktifkan dengan `ENABLE_VISION=true` dan `pip install -r requirements-vision.txt`.
+Aktifkan dengan `ENABLE_VISION=true` dan `pip install -r requirements-vision.txt`. Paket ini ikut memasang PyTorch (beberapa GB); disarankan Python 3.11 atau 3.12 dan koneksi stabil.
 
 - 1 frame tiap `VISION_SAMPLE_S` detik per kamera (bukan setiap frame).
 - YOLO: api/asap (weights khusus di `FIRE_WEIGHTS`, misalnya hasil training dataset D-Fire), kendaraan bertabrakan (kotak kendaraan saling tumpang tindih), kerumunan (jumlah orang), dan kelas kustom lain (`flood`, `fight`) bila weights-nya punya.
@@ -239,5 +239,7 @@ Weights fire/smoke tidak dibundel. Latih YOLO di dataset D-Fire (fire + smoke) l
 
 - Peta dikunci di wilayah Indonesia (north 6.8, south -11.8, west 94.0, east 141.8) dengan zoom minimum dinamis.
 - Tile fallback default Stadia `alidade_smooth_dark` gratis tanpa key di localhost. Untuk domain publik, daftar gratis di stadiamaps.com atau ganti `VITE_TILE_URL`. Tile CARTO `dark_all` sekarang meminta API key.
+- Peta dibuat ringan: tile tanpa versi retina, zoom maksimal 12 (level kota), tile dimuat saat peta diam, poligon dan rute digambar di canvas.
+- Kejadian simulasi selesai otomatis setelah 8 menit dan maksimal 12 aktif sekaligus, supaya peta tidak menumpuk saat demo berjalan lama. Pulse hanya untuk kejadian kritis yang belum ditangani.
 - Semua animasi memakai `motion` (`motion/react`) dengan `MotionConfig reducedMotion="user"`; pulse kritis dimatikan saat reduced motion.
 - Design system: `design-system/waspada-nusantara/MASTER.md` (ui-ux-pro-max, density 8, motion 5).

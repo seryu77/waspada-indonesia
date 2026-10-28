@@ -15,9 +15,12 @@ import { routeText, zoneText } from './overlayText'
 // Tile gelap gratis. Stadia jalan tanpa key di localhost; untuk domain publik daftar gratis di stadiamaps.com
 // atau ganti lewat VITE_TILE_URL (misal tile CARTO dark_all bila punya akses).
 const TILE_URL =
-  (import.meta.env.VITE_TILE_URL as string) || 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
+  (import.meta.env.VITE_TILE_URL as string) || 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png'
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+
+// Detail secukupnya: level kota sudah cukup untuk peta peringatan, tile lebih sedikit dan ringan
+const MAX_ZOOM = 12
 
 const BOUNDS = L.latLngBounds([INDONESIA_BOUNDS.south, INDONESIA_BOUNDS.west], [INDONESIA_BOUNDS.north, INDONESIA_BOUNDS.east])
 
@@ -44,7 +47,10 @@ function fitPadding(): { tl: [number, number]; br: [number, number] } {
 function Controller({ focus, pickMode, onPick }: Pick<MapProps, 'focus' | 'pickMode' | 'onPick'>) {
   const map = useMap()
   const reduce = useReducedMotion()
-  if (import.meta.env.DEV) (window as unknown as { __wnMap: L.Map }).__wnMap = map
+  useEffect(() => {
+    // Akses peta dari console saat development (debug)
+    if (import.meta.env.DEV) Object.assign(window, { __wnMap: map })
+  }, [map])
 
   // Tampilkan seluruh Indonesia di area peta yang tidak tertutup panel, lalu kunci zoom minimum
   useEffect(() => {
@@ -87,6 +93,8 @@ export default function LeafletMapView(p: MapProps) {
       maxBounds={BOUNDS.pad(0.6)}
       maxBoundsViscosity={1}
       zoomSnap={0.1}
+      maxZoom={MAX_ZOOM}
+      preferCanvas
       zoomDelta={0.5}
       zoomControl={false}
       worldCopyJump={false}
@@ -96,7 +104,11 @@ export default function LeafletMapView(p: MapProps) {
       <TileLayer
         url={TILE_URL}
         attribution={TILE_ATTRIBUTION}
-        maxZoom={19}
+        maxZoom={MAX_ZOOM}
+        detectRetina={false}
+        updateWhenIdle
+        updateWhenZooming={false}
+        keepBuffer={1}
       />
       <Controller focus={p.focus} pickMode={p.pickMode} onPick={p.onPick} />
 

@@ -17,7 +17,7 @@ const ACTOR: Record<Actor, { Icon: typeof Bot; label: string }> = {
 }
 
 function useRemaining(deadline?: string) {
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     if (!deadline) return
     const t = window.setInterval(() => setNow(Date.now()), 200)

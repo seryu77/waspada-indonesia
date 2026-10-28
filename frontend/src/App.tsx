@@ -5,7 +5,8 @@ import type { HazardType, Incident, LayerVisibility, ReportInput } from './types
 import { useLiveData } from './store/useLiveData'
 import { HAZARD_ORDER } from './lib/hazards'
 import { effectiveSeverity, sortIncidents } from './lib/sort'
-import { MapView, MAP_ENGINE } from './map/MapView'
+import { MapView } from './map/MapView'
+import { MAP_ENGINE } from './map/engine'
 import type { FocusTarget } from './map/types'
 import { TopBar } from './components/TopBar'
 import { LayerPanel } from './components/LayerPanel'
@@ -70,7 +71,7 @@ export default function App() {
     [active],
   )
 
-  const flyTo = useCallback((i: Incident) => setFocus({ lat: i.lat, lng: i.lng, zoom: 12, key: Date.now() }), [])
+  const flyTo = useCallback((i: Incident) => setFocus({ lat: i.lat, lng: i.lng, zoom: 11, key: Date.now() }), [])
 
   const select = useCallback(
     (id: string) => {
