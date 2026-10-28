@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, type Variants } from 'motion/react'
 import type { Camera, Incident } from '../types'
 import { IncidentFeed } from './IncidentFeed'
 import { IncidentDetail } from './IncidentDetail'
@@ -17,9 +17,9 @@ interface Props {
 }
 
 // Feed -> detail bergeser ke kiri (masuk lebih dalam), detail -> feed sebaliknya. Keluar lebih cepat dari masuk.
-const slide = {
+const slide: Variants = {
   initial: (dir: number) => ({ opacity: 0, x: dir * 20 }),
-  animate: { opacity: 1, x: 0, transition: { duration: 0.22, ease: [0.2, 0.8, 0.2, 1] } },
+  animate: { opacity: 1, x: 0, transition: { duration: 0.22, ease: [0.2, 0.8, 0.2, 1] as const } },
   exit: (dir: number) => ({ opacity: 0, x: dir * -12, transition: { duration: 0.12 } }),
 }
 

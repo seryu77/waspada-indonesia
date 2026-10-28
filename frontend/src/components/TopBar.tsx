@@ -71,7 +71,7 @@ function Stat({ label, value, color }: { label: string; value: number; color?: s
 
 export function TopBar({ connection, lastUpdate, stats, onReport }: Props) {
   return (
-    <header className="pointer-events-auto flex h-13 shrink-0 items-stretch border-b border-line bg-panel">
+    <header className="pointer-events-auto glass flex h-13 shrink-0 items-stretch border-b border-line">
       <div className="flex items-center gap-2.5 px-3 md:px-4">
         <span className="grid h-7 w-7 place-items-center bg-danger text-white" aria-hidden>
           <TriangleAlert size={16} strokeWidth={2.5} />

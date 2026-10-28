@@ -25,7 +25,7 @@ function ToastItem({ inc, onOpen, onDismiss }: { inc: Incident; onOpen: (id: str
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: 24, transition: { duration: 0.15 } }}
       transition={{ type: 'spring', stiffness: 520, damping: 38 }}
-      className="pointer-events-auto relative w-full overflow-hidden border border-line-strong bg-panel shadow-[0_12px_32px_rgb(0_0_0/0.5)]"
+      className="glass-strong pointer-events-auto relative w-full overflow-hidden rounded-sm border border-line-strong"
     >
       <div className="flex items-start gap-3 py-3 pl-4 pr-2">
         <span className="absolute inset-y-0 left-0 w-1 bg-sev-critical" aria-hidden />

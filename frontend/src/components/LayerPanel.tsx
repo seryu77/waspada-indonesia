@@ -167,7 +167,7 @@ export function LayerPanel({ open, setOpen, mobile, ...controls }: PanelProps) {
             onClick={() => setOpen(true)}
             aria-expanded={open}
             aria-controls="layer-panel"
-            className="pointer-events-auto flex h-10 items-center gap-2 rounded-sm border border-line bg-panel px-3 text-sm font-semibold"
+            className="glass pointer-events-auto flex h-10 items-center gap-2 rounded-sm border border-line px-3 text-sm font-semibold"
           >
             <Layers size={16} aria-hidden />
             Layer
@@ -179,7 +179,7 @@ export function LayerPanel({ open, setOpen, mobile, ...controls }: PanelProps) {
               <>
                 <motion.div
                   key="scrim"
-                  className="fixed inset-0 z-40 bg-black/60"
+                  className="fixed inset-0 z-40 bg-black/40"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0, transition: { duration: 0.15 } }}
@@ -192,7 +192,7 @@ export function LayerPanel({ open, setOpen, mobile, ...controls }: PanelProps) {
                   role="dialog"
                   aria-modal="true"
                   aria-label="Pengaturan layer peta"
-                  className="scroll-thin fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] overflow-y-auto border-r border-line bg-panel"
+                  className="glass-strong scroll-thin fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] overflow-y-auto border-r border-line"
                   initial={{ x: '-100%' }}
                   animate={{ x: 0 }}
                   exit={{ x: '-100%', transition: { duration: 0.18 } }}
@@ -223,7 +223,7 @@ export function LayerPanel({ open, setOpen, mobile, ...controls }: PanelProps) {
     <aside
       id="layer-panel"
       aria-label="Pengaturan layer peta"
-      className={`pointer-events-auto flex h-full shrink-0 flex-col overflow-hidden border-r border-line bg-panel ${open ? 'w-62' : 'w-12'}`}
+      className={`glass pointer-events-auto flex h-full shrink-0 flex-col overflow-hidden border-r border-line ${open ? 'w-62' : 'w-12'}`}
     >
       <AnimatePresence mode="wait" initial={false}>
         {open ? (

@@ -29,7 +29,7 @@ export function BottomSheet({ expanded, setExpanded, summary, children }: Props)
   return (
     <motion.section
       aria-label="Daftar kejadian"
-      className="glass-strong pointer-events-auto fixed inset-x-0 bottom-0 z-30 flex flex-col rounded-t-2xl"
+      className="pointer-events-auto fixed inset-x-0 bottom-0 z-30 flex flex-col glass-strong rounded-t-md border-t border-line-strong"
       style={{ height }}
       initial={{ y: height }}
       animate={{ y: expanded ? 0 : collapsedY }}
@@ -46,7 +46,7 @@ export function BottomSheet({ expanded, setExpanded, summary, children }: Props)
           aria-label={expanded ? 'Ciutkan daftar kejadian' : 'Buka daftar kejadian'}
           className="mx-auto mb-2 flex h-6 w-16 items-center justify-center rounded-full"
         >
-          <span className="h-1.5 w-10 rounded-full bg-white/30" aria-hidden />
+          <span className="h-1 w-10 bg-line-strong" aria-hidden />
         </button>
         {summary}
       </motion.div>

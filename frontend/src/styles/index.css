@@ -12,9 +12,10 @@
 
   --color-bg: #0b0d10;
   --color-panel: #111419;
-  --color-raised: #181c22;
-  --color-line: #252a32;
-  --color-line-strong: #353c47;
+  /* Di atas kaca: hover dan garis memakai putih transparan supaya peta tetap terasa di belakangnya */
+  --color-raised: rgb(255 255 255 / 0.07);
+  --color-line: rgb(255 255 255 / 0.09);
+  --color-line-strong: rgb(255 255 255 / 0.18);
   --color-fg: #e9ebee;
   --color-dim: #c3c8cf;
   --color-muted-fg: #929aa4;
@@ -77,6 +78,28 @@
 }
 
 @layer components {
+  /*
+    Kaca: gelap semi-transparan + blur. Opasitas cukup tinggi supaya teks kecil tetap >= 4.5:1
+    di atas peta. Kilau tipis di tepi atas memberi kesan lapisan, bukan efek dekoratif.
+  */
+  .glass {
+    background: rgb(12 15 20 / 0.6);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    backdrop-filter: blur(22px) saturate(160%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  }
+  .glass-strong {
+    background: rgb(12 15 20 / 0.78);
+    -webkit-backdrop-filter: blur(24px) saturate(150%);
+    backdrop-filter: blur(24px) saturate(150%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07), 0 18px 48px rgb(0 0 0 / 0.5);
+  }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .glass,
+    .glass-strong {
+      background: rgb(14 17 22 / 0.96);
+    }
+  }
   /* Label rambu: huruf kapital, rapat, untuk judul seksi dan status */
   .sign {
     font-family: var(--font-display);

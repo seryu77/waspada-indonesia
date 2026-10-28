@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
-import { MapPin, Megaphone, WifiOff, X } from 'lucide-react'
+import { MapPin, Megaphone, WifiOff } from 'lucide-react'
 import type { HazardType, Incident, LayerVisibility, ReportInput } from './types'
 import { useLiveData } from './store/useLiveData'
 import { HAZARD_ORDER } from './lib/hazards'
 import { effectiveSeverity, sortIncidents } from './lib/sort'
 import { MapView } from './map/MapView'
-import { MAP_ENGINE } from './map/engine'
 import type { FocusTarget } from './map/types'
 import { TopBar } from './components/TopBar'
 import { LayerPanel } from './components/LayerPanel'
-import { Legend } from './components/Legend'
 import { IncidentPanel } from './components/IncidentPanel'
 import { BottomSheet } from './components/BottomSheet'
 import { Toasts } from './components/Toasts'
@@ -41,7 +39,7 @@ export default function App() {
   const wide = useMedia('(min-width: 1024px)')
 
   const [layers, setLayers] = useState<LayerVisibility>(DEFAULT_LAYERS)
-  const [layersOpen, setLayersOpen] = useState(() => window.innerWidth >= 1280)
+  const [layersOpen, setLayersOpen] = useState(() => window.innerWidth >= 1200)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [focus, setFocus] = useState<FocusTarget | null>(null)
   const [sheetExpanded, setSheetExpanded] = useState(false)
@@ -95,9 +93,9 @@ export default function App() {
   }
 
   const panelHeader = (
-    <div className="flex items-center justify-between px-3 pt-3">
-      <h2 className="font-mono text-sm font-semibold">Kejadian aktif</h2>
-      <span className="font-mono text-xs text-muted-fg tabular">{visible.length} ditampilkan</span>
+    <div className="flex h-11 items-center justify-between border-b border-line px-4">
+      <h2 className="sign text-[14px]">Kejadian aktif</h2>
+      <span className="text-xs text-muted-fg tabular">{visible.length} ditampilkan</span>
     </div>
   )
 
@@ -115,89 +113,111 @@ export default function App() {
     />
   )
 
+  const layerPanel = (
+    <LayerPanel
+      open={layersOpen}
+      setOpen={(v) => {
+        setLayersOpen(v)
+        if (v && mobile) setSheetExpanded(false)
+      }}
+      mobile={mobile}
+      layers={layers}
+      setLayers={setLayers}
+      counts={counts}
+      cameraCount={{ online: snapshot.cameras.filter((c) => c.status === 'online').length, total: snapshot.cameras.length }}
+      onTriggerDemo={() => {
+        void live.triggerDemo()
+        if (mobile) setLayersOpen(false)
+      }}
+    />
+  )
+
   return (
     <MotionConfig reducedMotion="user">
-      <a href="#incident-panel" className="sr-only-focusable fixed left-3 top-3 z-[60] rounded-lg bg-fg px-3 py-2 text-sm font-semibold text-bg">
+      <a href="#incident-panel" className="sr-only-focusable fixed left-3 top-3 z-[60] bg-fg px-3 py-2 text-sm font-semibold text-bg">
         Lompat ke daftar kejadian
       </a>
 
       <main className="relative h-full w-full">
-        {/* Lapisan UI di atas peta */}
-        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col p-2 md:p-3">
-          <TopBar connection={live.connection} lastUpdate={live.lastUpdate} stats={stats} onReport={() => setReportOpen(true)} />
+        {/* Lapisan UI kaca di atas peta penuh: top bar, lalu [rail layer | area peta | feed/detail] */}
+        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
+          <div className="pointer-events-auto">
+            <TopBar connection={live.connection} lastUpdate={live.lastUpdate} stats={stats} onReport={() => setReportOpen(true)} />
+          </div>
 
-          <AnimatePresence>
+          <AnimatePresence initial={false}>
             {live.offline && (
               <motion.div
                 key="offline"
                 role="status"
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="pointer-events-auto mx-auto mt-2 flex items-center gap-2 rounded-lg border border-sev-medium/40 bg-[#422006]/90 px-3 py-1.5 text-xs text-[#FDE68A]"
+                initial={{ height: 0 }}
+                animate={{ height: 'auto' }}
+                exit={{ height: 0, transition: { duration: 0.15 } }}
+                className="pointer-events-auto shrink-0 overflow-hidden bg-[#3A2A06]/85 backdrop-blur-md"
               >
-                <WifiOff size={14} aria-hidden />
-                Mode offline: server tidak terjangkau, menampilkan data demo dan simulator lokal.
+                <p className="flex items-center gap-2 border-b border-[#6B4E0E] px-4 py-1.5 text-[13px] text-[#FDE68A]">
+                  <WifiOff size={14} aria-hidden />
+                  <span className="sign text-[13px]">Mode offline</span>
+                  Server tidak terjangkau. Menampilkan data demo dan simulator lokal.
+                </p>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div className="relative mt-2 flex min-h-0 flex-1 gap-3">
-            {/* Kiri */}
-            <div className="flex min-h-0 flex-col items-start gap-2">
-              <LayerPanel
-                open={layersOpen}
-                setOpen={(v) => {
-                  setLayersOpen(v)
-                  if (v && mobile) setSheetExpanded(false)
-                }}
-                mobile={mobile}
-                layers={layers}
-                setLayers={setLayers}
-                counts={counts}
-                cameraCount={{ online: snapshot.cameras.filter((c) => c.status === 'online').length, total: snapshot.cameras.length }}
-                onTriggerDemo={() => {
-                  void live.triggerDemo()
-                  if (mobile) setLayersOpen(false)
-                }}
-              />
+          <div className="relative flex min-h-0 flex-1">
+            {!mobile && layerPanel}
+
+            {/* Area peta yang terlihat: toast, tombol mobile, banner pilih lokasi */}
+            <div className="relative min-w-0 flex-1">
+              <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-3">
+                <Toasts toasts={live.newCritical} onOpen={select} onDismiss={live.dismissToast} />
+              </div>
+
               {mobile && (
-                <button
-                  type="button"
-                  onClick={() => setReportOpen(true)}
-                  className="glass pointer-events-auto flex h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium sm:hidden"
-                >
-                  <Megaphone size={18} aria-hidden /> Lapor
-                </button>
+                <div className="absolute left-2 top-2 z-10 flex flex-col items-start gap-2">
+                  {layerPanel}
+                  <button
+                    type="button"
+                    onClick={() => setReportOpen(true)}
+                    className="glass pointer-events-auto flex h-10 items-center gap-2 rounded-sm border border-line px-3 text-sm font-semibold sm:hidden"
+                  >
+                    <Megaphone size={16} aria-hidden /> Lapor
+                  </button>
+                </div>
               )}
+
+              <AnimatePresence>
+                {pickMode && (
+                  <motion.div
+                    key="pick"
+                    role="status"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                    className="glass-strong pointer-events-auto absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-3 rounded-sm border border-line-strong px-4 py-2 text-sm font-semibold"
+                  >
+                    <MapPin size={16} aria-hidden /> Klik peta untuk memilih lokasi kejadian
+                    <button type="button" onClick={() => setPickMode(false)} className="text-dim underline underline-offset-2 hover:text-fg">
+                      Batal
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
-            {/* Toast di tengah atas */}
-            <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex justify-center px-2 md:px-[300px]">
-              <Toasts toasts={live.newCritical} onOpen={select} onDismiss={live.dismissToast} />
-            </div>
-
-            {/* Kanan (desktop / tablet) */}
             {!mobile && (
               <aside
                 id="incident-panel"
                 aria-label="Feed dan detail kejadian"
-                className={`glass scroll-thin pointer-events-auto ml-auto min-h-0 overflow-y-auto rounded-xl ${wide ? 'w-[380px]' : 'w-[340px]'}`}
+                className={`glass scroll-thin pointer-events-auto min-h-0 shrink-0 overflow-y-auto border-l border-line ${wide ? 'w-[400px]' : 'w-[350px]'}`}
               >
                 {panel}
               </aside>
             )}
           </div>
-
-          {!mobile && (
-            <div className="mt-2 flex items-end">
-              <Legend />
-              <span className="ml-3 hidden font-mono text-[11px] text-muted-fg lg:inline">Peta: {MAP_ENGINE}</span>
-            </div>
-          )}
         </div>
 
-        {/* Peta di akhir urutan DOM supaya Tab mencapai kontrol UI lebih dulu */}
+        {/* Peta penuh di belakang; di akhir urutan DOM supaya Tab mencapai kontrol UI lebih dulu */}
         <div className="absolute inset-0 z-0">
           <MapView
             incidents={visible}
@@ -216,18 +236,17 @@ export default function App() {
           />
         </div>
 
-        {/* Mobile: bottom sheet */}
         {mobile && (
-          <div id="incident-panel" className="pointer-events-none absolute inset-0 z-20">
+          <div id="incident-panel" className="pointer-events-none fixed inset-0 z-20">
             <BottomSheet
               expanded={sheetExpanded}
               setExpanded={setSheetExpanded}
               summary={
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="font-mono text-sm font-semibold">Kejadian aktif</h2>
-                  <div className="flex items-center gap-3 font-mono text-xs tabular">
+                <div className="flex items-baseline justify-between gap-2">
+                  <h2 className="sign text-[15px]">Kejadian aktif</h2>
+                  <div className="flex items-baseline gap-3 text-[13px] tabular">
                     <span>{stats.active} aktif</span>
-                    <span className="text-[#F87171]">{stats.critical} kritis</span>
+                    <span className="text-sev-critical">{stats.critical} kritis</span>
                     <span className="text-accent">{stats.dispatched} dikirim</span>
                   </div>
                 </div>
@@ -237,25 +256,6 @@ export default function App() {
             </BottomSheet>
           </div>
         )}
-
-        {/* Mode pilih lokasi */}
-        <AnimatePresence>
-          {pickMode && (
-            <motion.div
-              key="pick"
-              role="status"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="glass-strong fixed left-1/2 top-20 z-50 flex -translate-x-1/2 items-center gap-3 rounded-xl px-3 py-2 text-sm"
-            >
-              <MapPin size={16} aria-hidden /> Klik peta untuk memilih lokasi kejadian
-              <button type="button" onClick={() => setPickMode(false)} aria-label="Batal pilih lokasi" className="grid h-8 w-8 place-items-center rounded-lg hover:bg-white/10">
-                <X size={16} aria-hidden />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <AnimatePresence>
           {reportOpen && (

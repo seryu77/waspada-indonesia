@@ -64,7 +64,7 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
   return (
     <>
       <motion.div
-        className="pointer-events-auto fixed inset-0 z-50 bg-black/55"
+        className="pointer-events-auto fixed inset-0 z-50 bg-black/40"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -77,7 +77,7 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
         aria-modal="true"
         aria-labelledby="report-h"
         style={{ display: hidden ? 'none' : undefined }}
-        className="glass-strong scroll-thin pointer-events-auto fixed inset-x-3 bottom-3 top-auto z-50 max-h-[88vh] overflow-y-auto rounded-2xl p-4 sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2"
+        className="scroll-thin pointer-events-auto fixed inset-x-0 bottom-0 top-auto z-50 max-h-[90vh] overflow-y-auto glass-strong rounded-t-md border border-line-strong p-4 sm:rounded-md sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 24 }}
@@ -85,17 +85,17 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
       >
         <form onSubmit={submit} className="space-y-4" noValidate>
           <div className="flex items-center justify-between">
-            <h2 id="report-h" className="font-mono text-base font-semibold">
+            <h2 id="report-h" className="sign text-[18px]">
               Lapor kejadian
             </h2>
-            <button type="button" onClick={onClose} aria-label="Tutup form laporan" className="grid h-10 w-10 place-items-center rounded-lg hover:bg-white/10">
+            <button type="button" onClick={onClose} aria-label="Tutup form laporan" className="grid h-10 w-10 place-items-center hover:bg-raised">
               <X size={18} aria-hidden />
             </button>
           </div>
           <p className="-mt-2 text-xs text-muted-fg">Laporan diverifikasi AI sebelum tampil sebagai terkonfirmasi. Dalam kondisi darurat, langsung hubungi 112.</p>
 
           <fieldset>
-            <legend className="mb-2 text-sm font-medium">Jenis kejadian</legend>
+            <legend className="sign mb-2 text-[13px] text-muted-fg">Jenis kejadian</legend>
             <div className="grid grid-cols-2 gap-1.5">
               {HAZARD_ORDER.map((h, idx) => {
                 const { Icon, color, label } = HAZARDS[h]
@@ -107,13 +107,11 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
                     type="button"
                     aria-pressed={active}
                     onClick={() => setType(h)}
-                    className={`flex h-10 items-center gap-2 rounded-lg border px-2 text-left text-sm transition-colors duration-150 ${
-                      active ? 'border-white/60 bg-white/10' : 'border-white/10 hover:bg-white/5'
+                    className={`flex h-10 items-center gap-2 rounded-sm border px-2 text-left text-sm transition-colors duration-150 ${
+                      active ? 'border-fg bg-raised text-fg' : 'border-line text-dim hover:border-line-strong hover:text-fg'
                     }`}
                   >
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full" style={{ background: color }} aria-hidden>
-                      <Icon size={13} color="#0F172A" strokeWidth={2.4} />
-                    </span>
+                    <Icon size={15} color={color} strokeWidth={2.3} aria-hidden />
                     <span className="truncate">{label}</span>
                   </button>
                 )
@@ -122,7 +120,7 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
           </fieldset>
 
           <div>
-            <label htmlFor="report-desc" className="mb-1.5 block text-sm font-medium">
+            <label htmlFor="report-desc" className="sign mb-1.5 block text-[13px] text-muted-fg">
               Deskripsi
             </label>
             <textarea
@@ -131,15 +129,15 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="Contoh: air setinggi lutut menutup jalan di depan pasar"
-              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-fg placeholder:text-muted-fg focus:border-white focus:outline-none"
+              className="w-full rounded-sm border border-line-strong bg-black/30 px-3 py-2 text-sm text-fg placeholder:text-muted-fg focus:border-fg focus:outline-none"
             />
           </div>
 
           <div>
-            <span className="mb-1.5 block text-sm font-medium">Lokasi</span>
-            <div className="rounded-lg border border-border bg-card px-3 py-2 text-sm">
+            <span className="sign mb-1.5 block text-[13px] text-muted-fg">Lokasi</span>
+            <div className="rounded-sm border border-line bg-black/30 px-3 py-2 text-sm">
               {picked ? (
-                <span className="flex items-center gap-2 font-mono text-xs tabular">
+                <span className="flex items-center gap-2 text-sm tabular">
                   <MapPin size={14} aria-hidden /> {coord(picked.lat, picked.lng)}
                 </span>
               ) : (
@@ -147,26 +145,26 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
               )}
             </div>
             <div className="mt-2 grid grid-cols-2 gap-2">
-              <button type="button" onClick={onPickOnMap} className="flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 text-sm hover:bg-white/10">
+              <button type="button" onClick={onPickOnMap} className="flex h-10 items-center justify-center gap-2 rounded-sm border border-line-strong text-sm font-semibold text-dim hover:border-fg hover:text-fg">
                 <MapPin size={16} aria-hidden /> Pilih di peta
               </button>
-              <button type="button" onClick={useMyLocation} className="flex h-10 items-center justify-center gap-2 rounded-lg border border-white/15 text-sm hover:bg-white/10">
+              <button type="button" onClick={useMyLocation} className="flex h-10 items-center justify-center gap-2 rounded-sm border border-line-strong text-sm font-semibold text-dim hover:border-fg hover:text-fg">
                 <LocateFixed size={16} aria-hidden /> Lokasi saya
               </button>
             </div>
           </div>
 
           <div>
-            <label htmlFor="report-photo" className="flex h-10 items-center gap-2 rounded-lg border border-dashed border-white/25 px-3 text-sm text-muted-fg hover:bg-white/5">
+            <label htmlFor="report-photo" className="flex h-10 items-center gap-2 rounded-sm border border-dashed border-line-strong px-3 text-sm text-dim hover:border-fg hover:text-fg">
               <ImagePlus size={16} aria-hidden />
               <span className="truncate">{photo ? photo.name : 'Tambah foto (opsional)'}</span>
             </label>
             <input id="report-photo" type="file" accept="image/*" className="sr-only" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
-            <p className="mt-1 text-[11px] text-muted-fg">Wajah dan plat nomor diblur otomatis sebelum disimpan.</p>
+            <p className="mt-1 text-xs text-muted-fg">Wajah dan plat nomor diblur otomatis sebelum disimpan.</p>
           </div>
 
           {error && (
-            <p role="alert" className="rounded-lg bg-danger/10 px-3 py-2 text-sm text-[#FCA5A5]">
+            <p role="alert" className="border-l-2 border-danger py-1 pl-3 text-sm text-[#FCA5A5]">
               {error}
             </p>
           )}
@@ -174,10 +172,10 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
           <button
             type="submit"
             disabled={sending}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-accent text-sm font-semibold text-on-accent transition-colors duration-150 hover:bg-[#16A34A] disabled:opacity-60"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-sm bg-fg text-bg transition-colors duration-150 hover:bg-white disabled:opacity-60"
           >
             <Send size={16} aria-hidden />
-            {sending ? 'Mengirim...' : 'Kirim laporan'}
+            <span className="sign text-[15px]">{sending ? 'Mengirim' : 'Kirim laporan'}</span>
           </button>
         </form>
       </motion.div>

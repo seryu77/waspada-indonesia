@@ -37,11 +37,12 @@ function ReactMarker({ lat, lng, z = 0, children }: { lat: number; lng: number; 
 }
 
 /** Ruang yang tertutup top bar dan panel, supaya Indonesia muat di area yang terlihat. */
+/** Ruang yang tertutup panel kaca, diukur langsung dari DOM supaya Indonesia muat di area yang terlihat. */
 function fitPadding(): { tl: [number, number]; br: [number, number] } {
-  const w = window.innerWidth
-  if (w < 900) return { tl: [8, 120], br: [8, 130] }
-  if (w < 1280) return { tl: [16, 80], br: [w < 1024 ? 356 : 396, 60] }
-  return { tl: [290, 80], br: [400, 60] }
+  const w = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.offsetWidth ?? 0
+  const top = (document.querySelector('header') as HTMLElement | null)?.offsetHeight ?? 52
+  if (window.innerWidth < 900) return { tl: [8, top + 48], br: [8, 120] }
+  return { tl: [w('aside#layer-panel') + 16, top + 16], br: [w('aside#incident-panel') + 16, 16] }
 }
 
 function Controller({ focus, pickMode, onPick }: Pick<MapProps, 'focus' | 'pickMode' | 'onPick'>) {
@@ -63,8 +64,12 @@ function Controller({ focus, pickMode, onPick }: Pick<MapProps, 'focus' | 'pickM
     fit(true)
     const onResize = () => fit(false)
     map.on('resize', onResize)
+    // Kolom peta berubah lebar saat rail layer dibuka/diciutkan
+    const ro = new ResizeObserver(() => map.invalidateSize({ pan: false }))
+    ro.observe(map.getContainer())
     return () => {
       map.off('resize', onResize)
+      ro.disconnect()
     }
   }, [map])
 
