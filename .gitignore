@@ -1,0 +1,11 @@
+.env
+*.env.local
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.db
+backend/weights/
+backend/app/vision/frames/
+*.pt
+*.onnx

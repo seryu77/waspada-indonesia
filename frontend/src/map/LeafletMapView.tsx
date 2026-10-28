@@ -1,0 +1,153 @@
+import { useEffect, useMemo, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
+import L from 'leaflet'
+import { Circle, MapContainer, Marker, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
+import { useReducedMotion } from 'motion/react'
+import type { MapProps } from './types'
+import { INDONESIA_BOUNDS } from '../lib/bounds'
+import { ROUTES, SEVERITY, ZONES } from '../lib/hazards'
+import { effectiveSeverity } from '../lib/sort'
+import { IncidentMarker } from './markers/IncidentMarker'
+import { CameraMarker } from './markers/CameraMarker'
+import { PickedMarker } from './markers/PickedMarker'
+import { routeText, zoneText } from './overlayText'
+
+// Tile gelap gratis. Stadia jalan tanpa key di localhost; untuk domain publik daftar gratis di stadiamaps.com
+// atau ganti lewat VITE_TILE_URL (misal tile CARTO dark_all bila punya akses).
+const TILE_URL =
+  (import.meta.env.VITE_TILE_URL as string) || 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png'
+const TILE_ATTRIBUTION =
+  '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+
+const BOUNDS = L.latLngBounds([INDONESIA_BOUNDS.south, INDONESIA_BOUNDS.west], [INDONESIA_BOUNDS.north, INDONESIA_BOUNDS.east])
+
+/** Marker Leaflet yang isinya komponen React (supaya bisa pakai motion dan fokus keyboard). */
+function ReactMarker({ lat, lng, z = 0, children }: { lat: number; lng: number; z?: number; children: ReactNode }) {
+  const el = useMemo(() => document.createElement('div'), [])
+  const icon = useMemo(() => L.divIcon({ html: el, className: 'wn-marker', iconSize: [0, 0] }), [el])
+  return (
+    <>
+      <Marker position={[lat, lng]} icon={icon} keyboard={false} zIndexOffset={z} />
+      {createPortal(<div style={{ position: 'absolute', transform: 'translate(-50%, -50%)' }}>{children}</div>, el)}
+    </>
+  )
+}
+
+/** Ruang yang tertutup top bar dan panel, supaya Indonesia muat di area yang terlihat. */
+function fitPadding(): { tl: [number, number]; br: [number, number] } {
+  const w = window.innerWidth
+  if (w < 900) return { tl: [8, 120], br: [8, 130] }
+  if (w < 1280) return { tl: [16, 80], br: [w < 1024 ? 356 : 396, 60] }
+  return { tl: [290, 80], br: [400, 60] }
+}
+
+function Controller({ focus, pickMode, onPick }: Pick<MapProps, 'focus' | 'pickMode' | 'onPick'>) {
+  const map = useMap()
+  const reduce = useReducedMotion()
+  if (import.meta.env.DEV) (window as unknown as { __wnMap: L.Map }).__wnMap = map
+
+  // Tampilkan seluruh Indonesia di area peta yang tidak tertutup panel, lalu kunci zoom minimum
+  useEffect(() => {
+    const fit = (initial: boolean) => {
+      const pad = fitPadding()
+      const z = map.getBoundsZoom(BOUNDS, false, L.point(pad.tl[0] + pad.br[0], pad.tl[1] + pad.br[1]))
+      map.setMinZoom(Math.max(3, Math.floor(z * 10) / 10 - 0.2))
+      if (initial) map.fitBounds(BOUNDS, { paddingTopLeft: pad.tl, paddingBottomRight: pad.br, animate: false })
+    }
+    fit(true)
+    const onResize = () => fit(false)
+    map.on('resize', onResize)
+    return () => {
+      map.off('resize', onResize)
+    }
+  }, [map])
+
+  useEffect(() => {
+    if (!focus) return
+    if (reduce) map.setView([focus.lat, focus.lng], focus.zoom)
+    else map.flyTo([focus.lat, focus.lng], focus.zoom, { duration: 1.1 })
+  }, [focus, map, reduce])
+
+  useEffect(() => {
+    map.getContainer().style.cursor = pickMode ? 'crosshair' : ''
+  }, [map, pickMode])
+
+  useMapEvents({
+    click(e) {
+      if (pickMode) onPick(e.latlng.lat, e.latlng.lng)
+    },
+  })
+  return null
+}
+
+export default function LeafletMapView(p: MapProps) {
+  return (
+    <MapContainer
+      bounds={BOUNDS}
+      maxBounds={BOUNDS.pad(0.6)}
+      maxBoundsViscosity={1}
+      zoomSnap={0.1}
+      zoomDelta={0.5}
+      zoomControl={false}
+      worldCopyJump={false}
+      className="h-full w-full"
+      attributionControl
+    >
+      <TileLayer
+        url={TILE_URL}
+        attribution={TILE_ATTRIBUTION}
+        maxZoom={19}
+      />
+      <Controller focus={p.focus} pickMode={p.pickMode} onPick={p.onPick} />
+
+      {p.zones.map((z) => {
+        const s = ZONES[z.kind]
+        const opts = { color: s.stroke, weight: 1.5, fillColor: s.fill, fillOpacity: s.fillOpacity, dashArray: s.dash }
+        const tip = (
+          <Tooltip sticky className="wn-tooltip">
+            {zoneText(z)}
+          </Tooltip>
+        )
+        return z.shape === 'circle' && z.center ? (
+          <Circle key={z.id} center={z.center} radius={z.radius_m ?? 1000} pathOptions={opts}>
+            {tip}
+          </Circle>
+        ) : (
+          <Polygon key={z.id} positions={z.coords ?? []} pathOptions={opts}>
+            {tip}
+          </Polygon>
+        )
+      })}
+
+      {p.routes.map((r) => (
+        <Polyline
+          key={r.id}
+          positions={r.path}
+          pathOptions={{ color: ROUTES[r.kind].color, weight: 5, opacity: 0.95, dashArray: ROUTES[r.kind].dash, lineCap: 'round' }}
+        >
+          <Tooltip sticky className="wn-tooltip">
+            {routeText(r)}
+          </Tooltip>
+        </Polyline>
+      ))}
+
+      {p.cameras.map((c) => (
+        <ReactMarker key={c.id} lat={c.lat} lng={c.lng} z={-100}>
+          <CameraMarker camera={c} />
+        </ReactMarker>
+      ))}
+
+      {p.incidents.map((i) => (
+        <ReactMarker key={i.id} lat={i.lat} lng={i.lng} z={SEVERITY[effectiveSeverity(i)].rank * 100 + (p.selectedId === i.id ? 1000 : 0)}>
+          <IncidentMarker incident={i} selected={p.selectedId === i.id} onSelect={p.onSelect} />
+        </ReactMarker>
+      ))}
+
+      {p.picked && (
+        <ReactMarker lat={p.picked.lat} lng={p.picked.lng} z={2000}>
+          <PickedMarker />
+        </ReactMarker>
+      )}
+    </MapContainer>
+  )
+}

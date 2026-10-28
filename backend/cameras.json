@@ -1,0 +1,93 @@
+{
+  "_note": "Konfigurasi kamera CCTV publik. stream_url di sini placeholder (example.invalid). Izin akses CCTV pemda/ATCS/Jasa Marga wajib dicek sebelum dipakai.",
+  "cameras": [
+    {
+      "id": "cam-jkt-kpmelayu",
+      "name": "Bali Mester",
+      "city": "Jakarta Timur",
+      "lat": -6.2214,
+      "lng": 106.8655,
+      "status": "online",
+      "detections_today": 7,
+      "stream_url": "https://example.invalid/jakarta/bali-mester.m3u8",
+      "stream_type": "hls"
+    },
+    {
+      "id": "cam-jkt-hi",
+      "name": "Bundaran HI",
+      "city": "Jakarta Pusat",
+      "lat": -6.195,
+      "lng": 106.823,
+      "status": "online",
+      "detections_today": 2,
+      "stream_url": "https://example.invalid/jakarta/bundaran-hi.m3u8",
+      "stream_type": "hls"
+    },
+    {
+      "id": "cam-bgr-puncak",
+      "name": "Simpang Gadog - Puncak",
+      "city": "Kab. Bogor",
+      "lat": -6.696,
+      "lng": 106.977,
+      "status": "online",
+      "detections_today": 4,
+      "stream_url": "https://example.invalid/bogor/puncak.jpg",
+      "stream_type": "snapshot"
+    },
+    {
+      "id": "cam-tol-cipularang",
+      "name": "Tol Cipularang KM 92",
+      "city": "Purwakarta",
+      "lat": -6.6225,
+      "lng": 107.436,
+      "status": "online",
+      "detections_today": 3,
+      "stream_url": "https://example.invalid/jasamarga/cipularang-92.m3u8",
+      "stream_type": "hls"
+    },
+    {
+      "id": "cam-bdg-pasteur",
+      "name": "Gerbang Pasteur",
+      "city": "Bandung",
+      "lat": -6.893,
+      "lng": 107.585,
+      "status": "online",
+      "detections_today": 1,
+      "stream_url": "https://example.invalid/bandung/pasteur.m3u8",
+      "stream_type": "hls"
+    },
+    {
+      "id": "cam-mdn-gatsu",
+      "name": "Simpang Gatot Subroto",
+      "city": "Medan",
+      "lat": 3.589,
+      "lng": 98.638,
+      "status": "online",
+      "detections_today": 5,
+      "stream_url": "rtsp://example.invalid/medan/gatsu",
+      "stream_type": "rtsp"
+    },
+    {
+      "id": "cam-plg-palindra",
+      "name": "Tol Palindra KM 12",
+      "city": "Ogan Ilir",
+      "lat": -3.11,
+      "lng": 104.695,
+      "status": "online",
+      "detections_today": 6,
+      "stream_url": "https://example.invalid/palindra/km12.m3u8",
+      "stream_type": "hls"
+    },
+    {
+      "id": "cam-sby-suramadu",
+      "name": "Gerbang Suramadu",
+      "city": "Surabaya",
+      "lat": -7.205,
+      "lng": 112.782,
+      "status": "offline",
+      "detections_today": 0,
+      "stream_url": "https://example.invalid/surabaya/suramadu.m3u8",
+      "stream_type": "hls"
+    }
+  ]
+}

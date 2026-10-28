@@ -1,0 +1,2 @@
+# Opsional: pipeline CCTV + computer vision (ENABLE_VISION=true)
+ultralytics>=8.3

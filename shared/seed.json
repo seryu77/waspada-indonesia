@@ -1,0 +1,391 @@
+{
+  "_note": "Data demo Waspada Nusantara. Lokasi nyata, kejadian rekaan. age_min = menit sejak dilaporkan, dikonversi ke waktu ISO saat dimuat.",
+  "incidents": [
+    {
+      "id": "inc-oki-01",
+      "type": "fire",
+      "title": "Karhutla lahan gambut",
+      "description": "Titik panas berulang di lahan gambut, asap tebal mengarah ke permukiman Pedamaran.",
+      "lat": -3.3215,
+      "lng": 105.8243,
+      "address": "Kec. Pedamaran, Kab. Ogan Komering Ilir, Sumatera Selatan",
+      "severity": "critical",
+      "source": { "id": "firms", "label": "NASA FIRMS (VIIRS)", "kind": "satellite" },
+      "age_min": 14,
+      "verification": {
+        "verdict": "confirmed",
+        "confidence": 0.93,
+        "severity": "critical",
+        "reasoning": "Tiga titik panas VIIRS berdekatan dalam 6 jam terakhir, konsisten dengan laporan warga soal asap tebal. Musim kemarau dan lahan gambut memperkuat dugaan kebakaran aktif.",
+        "recommended_agency": "BPBD Sumsel + Manggala Agni",
+        "model": "contoh verifikasi (data demo)",
+        "stage": "verify",
+        "simulated": true,
+        "needs_manual_review": false
+      },
+      "dispatch": {
+        "state": "sent",
+        "agency": "BPBD Sumsel + Manggala Agni",
+        "mode": "simulate",
+        "timeline": [
+          { "age_min": 13, "actor": "ai", "action": "verified", "note": "Terverifikasi (confidence 0,93)" },
+          { "age_min": 13, "actor": "system", "action": "countdown_started", "note": "Hitung mundur 45 detik dimulai" },
+          { "age_min": 12, "actor": "operator", "action": "confirmed", "note": "Operator mengirim lebih cepat" },
+          { "age_min": 12, "actor": "system", "action": "sent", "note": "Terkirim ke command center (simulasi)" }
+        ]
+      }
+    },
+    {
+      "id": "inc-pulpis-01",
+      "type": "fire",
+      "title": "Kebakaran lahan meluas",
+      "description": "Api merambat di lahan semak dan gambut dekat jalan Trans Kalimantan.",
+      "lat": -2.6231,
+      "lng": 114.1187,
+      "address": "Kec. Jabiren Raya, Kab. Pulang Pisau, Kalimantan Tengah",
+      "severity": "high",
+      "source": { "id": "firms", "label": "NASA FIRMS (MODIS)", "kind": "satellite" },
+      "age_min": 38,
+      "verification": {
+        "verdict": "confirmed",
+        "confidence": 0.86,
+        "severity": "high",
+        "reasoning": "Hotspot MODIS dengan confidence tinggi, berada di area yang tahun lalu terbakar. Arah angin membawa asap ke Palangka Raya.",
+        "recommended_agency": "BPBD Kalteng",
+        "model": "contoh verifikasi (data demo)",
+        "stage": "verify",
+        "simulated": true,
+        "needs_manual_review": false
+      },
+      "dispatch": {
+        "state": "sent",
+        "agency": "BPBD Kalteng",
+        "mode": "simulate",
+        "timeline": [
+          { "age_min": 37, "actor": "ai", "action": "verified", "note": "Terverifikasi (confidence 0,86)" },
+          { "age_min": 36, "actor": "system", "action": "sent", "note": "Terkirim otomatis setelah hitung mundur (simulasi)" }
+        ]
+      }
+    },
+    {
+      "id": "inc-kpmelayu-01",
+      "type": "flood",
+      "title": "Banjir setinggi 80 cm",
+      "description": "Luapan Kali Ciliwung merendam permukiman RW 04 sampai RW 08. Warga mulai mengungsi.",
+      "lat": -6.2245,
+      "lng": 106.8665,
+      "address": "Kampung Melayu, Jatinegara, Jakarta Timur",
+      "severity": "high",
+      "source": { "id": "petabencana", "label": "PetaBencana.id (laporan warga)", "kind": "citizen" },
+      "age_min": 22,
+      "camera_id": "cam-jkt-kpmelayu",
+      "verification": {
+        "verdict": "confirmed",
+        "confidence": 0.88,
+        "severity": "high",
+        "reasoning": "Frame CCTV Bali Mester memperlihatkan genangan menutup badan jalan, sesuai dengan 5 laporan warga dalam radius 500 m.",
+        "recommended_agency": "BPBD DKI Jakarta",
+        "model": "contoh verifikasi (data demo)",
+        "stage": "verify",
+        "simulated": true,
+        "needs_manual_review": false
+      }
+    },
+    {
+      "id": "inc-puncak-01",
+      "type": "landslide",
+      "title": "Longsor menutup jalur Puncak",
+      "description": "Material tanah dan pohon tumbang menutup dua lajur di sekitar Riung Gunung.",
+      "lat": -6.6975,
+      "lng": 106.9785,
+      "address": "Jl. Raya Puncak, Cisarua, Kab. Bogor, Jawa Barat",
+      "severity": "high",
+      "source": { "id": "cctv", "label": "CCTV Dishub Kab. Bogor", "kind": "cctv" },
+      "age_min": 47,
+      "camera_id": "cam-bgr-puncak",
+      "verification": {
+        "verdict": "confirmed",
+        "confidence": 0.91,
+        "severity": "high",
+        "reasoning": "Empat frame berurutan menunjukkan material longsor menutup jalan dan antrean kendaraan berhenti total.",
+        "recommended_agency": "BPBD Kab. Bogor + Satlantas",
+        "model": "contoh verifikasi (data demo)",
+        "stage": "verify",
+        "simulated": true,
+        "needs_manual_review": false
+      }
+    },
+    {
+      "id": "inc-cipularang-01",
+      "type": "accident",
+      "title": "Kecelakaan beruntun 5 kendaraan",
+      "description": "Truk rem blong menabrak beberapa kendaraan di turunan KM 92 arah Jakarta.",
+      "lat": -6.6233,
+      "lng": 107.4352,
+      "address": "Tol Cipularang KM 92, Kab. Purwakarta, Jawa Barat",
+      "severity": "critical",
+      "source": { "id": "cctv", "label": "CCTV Jasa Marga", "kind": "cctv" },
+      "age_min": 1,
+      "camera_id": "cam-tol-cipularang",
+      "verification": {
+        "verdict": "confirmed",
+        "confidence": 0.9,
+        "severity": "critical",
+        "reasoning": "Frame berurutan menunjukkan beberapa kendaraan berhenti melintang dan satu truk terguling. Tidak ada tanda latihan atau pemeliharaan jalan.",
+        "recommended_agency": "PJR Polda Jabar + Ambulans Jasa Marga",
+        "model": "contoh verifikasi (data demo)",
+        "stage": "verify",
+        "simulated": true,
+        "needs_manual_review": false
+      },
+      "dispatch": { "state": "countdown", "agency": "PJR Polda Jabar + Ambulans Jasa Marga", "mode": "simulate", "timeline": [] }
+    },
+    {
+      "id": "inc-medan-01",
+      "type": "crime",
+      "title": "Dugaan begal pengendara motor",
+      "description": "Dua orang berboncengan memepet pengendara dan merampas tas. Laporan dari warga dan CCTV persimpangan.",
+      "lat": 3.5881,
+      "lng": 98.6372,
+      "address": "Jl. Gatot Subroto, Medan Sunggal, Kota Medan, Sumatera Utara",
+      "severity": "medium",
+      "source": { "id": "demo", "label": "Data demo", "kind": "demo" },
+      "age_min": 31,
+      "verification": {
+        "verdict": "uncertain",
+        "confidence": 0.58,
+        "severity": "medium",
+        "reasoning": "Frame memperlihatkan dua motor berdekatan, namun tidak jelas ada perampasan. Butuh konfirmasi operator atau laporan tambahan.",
+        "recommended_agency": "Polrestabes Medan",
+        "model": "contoh verifikasi (data demo)",
+        "stage": "triage",
+        "simulated": true,
+        "needs_manual_review": true
+      }
+    },
+    {
+      "id": "inc-semeru-01",
+      "type": "volcano",
+      "title": "Semeru Level III (Siaga)",
+      "description": "Erupsi dengan tinggi kolom abu sekitar 1.000 m di atas puncak. Waspada awan panas guguran di sepanjang Besuk Kobokan.",
+      "lat": -8.1077,
+      "lng": 112.9224,
+      "address": "Gunung Semeru, Kab. Lumajang dan Kab. Malang, Jawa Timur",
+      "severity": "high",
+      "source": { "id": "magma", "label": "PVMBG / MAGMA Indonesia", "kind": "official" },
+      "age_min": 95
+    },
+    {
+      "id": "inc-lewotobi-01",
+      "type": "volcano",
+      "title": "Lewotobi Laki-laki Level III (Siaga)",
+      "description": "Aktivitas vulkanik meningkat, gempa vulkanik dalam tercatat berulang.",
+      "lat": -8.542,
+      "lng": 122.775,
+      "address": "Kab. Flores Timur, Nusa Tenggara Timur",
+      "severity": "high",
+      "source": { "id": "magma", "label": "PVMBG / MAGMA Indonesia", "kind": "official" },
+      "age_min": 180
+    },
+    {
+      "id": "inc-gempa-garut",
+      "type": "earthquake",
+      "title": "Gempa M5,2 Garut",
+      "description": "Pusat gempa di laut 87 km barat daya Garut, kedalaman 30 km. Tidak berpotensi tsunami.",
+      "lat": -8.05,
+      "lng": 107.45,
+      "address": "87 km BaratDaya Kab. Garut, Jawa Barat",
+      "severity": "medium",
+      "source": { "id": "bmkg", "label": "BMKG (TEWS)", "kind": "official" },
+      "age_min": 58,
+      "magnitude": 5.2
+    },
+    {
+      "id": "inc-gempa-maluku",
+      "type": "earthquake",
+      "title": "Gempa M4,6 Maluku Tengah",
+      "description": "Kedalaman 12 km, dirasakan II-III MMI di Masohi.",
+      "lat": -3.42,
+      "lng": 129.35,
+      "address": "34 km TimurLaut Masohi, Maluku Tengah",
+      "severity": "low",
+      "source": { "id": "bmkg", "label": "BMKG (TEWS)", "kind": "official" },
+      "age_min": 140,
+      "magnitude": 4.6
+    },
+    {
+      "id": "inc-palindra-01",
+      "type": "accident",
+      "title": "Jarak pandang < 50 m akibat asap",
+      "description": "Asap karhutla menutupi Tol Palindra. Dua kendaraan bersenggolan, arus diperlambat.",
+      "lat": -3.1105,
+      "lng": 104.6941,
+      "address": "Tol Palembang-Indralaya KM 12, Ogan Ilir, Sumatera Selatan",
+      "severity": "high",
+      "source": { "id": "cctv", "label": "CCTV Tol Palindra", "kind": "cctv" },
+      "age_min": 19,
+      "camera_id": "cam-plg-palindra",
+      "verification": {
+        "verdict": "confirmed",
+        "confidence": 0.82,
+        "severity": "high",
+        "reasoning": "Frame menunjukkan kabut asap pekat dan kendaraan menyalakan lampu hazard. Cocok dengan hotspot FIRMS 15 km di selatan.",
+        "recommended_agency": "PJR Polda Sumsel",
+        "model": "contoh verifikasi (data demo)",
+        "stage": "verify",
+        "simulated": true,
+        "needs_manual_review": false
+      }
+    },
+    {
+      "id": "inc-dayeuhkolot-01",
+      "type": "flood",
+      "title": "Genangan 40 cm",
+      "description": "Sungai Citarum meluap setelah hujan deras sejak sore.",
+      "lat": -6.9875,
+      "lng": 107.625,
+      "address": "Dayeuhkolot, Kab. Bandung, Jawa Barat",
+      "severity": "medium",
+      "source": { "id": "petabencana", "label": "PetaBencana.id (laporan warga)", "kind": "citizen" },
+      "age_min": 64
+    }
+  ],
+  "zones": [
+    {
+      "id": "zone-oki-burn",
+      "kind": "burn",
+      "shape": "polygon",
+      "label": "Zona terbakar Pedamaran",
+      "source": "NASA FIRMS (agregat 24 jam)",
+      "coords": [[-3.30, 105.80], [-3.29, 105.84], [-3.32, 105.86], [-3.345, 105.835], [-3.335, 105.805]]
+    },
+    {
+      "id": "zone-oki-smoke",
+      "kind": "smoke",
+      "shape": "polygon",
+      "label": "Sebaran asap OKI",
+      "source": "Model sebaran (demo)",
+      "coords": [[-3.25, 105.70], [-3.12, 105.40], [-3.02, 104.95], [-3.10, 104.62], [-3.24, 104.70], [-3.33, 105.20], [-3.40, 105.75], [-3.35, 105.90]]
+    },
+    {
+      "id": "zone-pulpis-smoke",
+      "kind": "smoke",
+      "shape": "polygon",
+      "label": "Sebaran asap Pulang Pisau",
+      "source": "Model sebaran (demo)",
+      "coords": [[-2.70, 114.05], [-2.55, 113.95], [-2.22, 113.88], [-2.15, 113.98], [-2.40, 114.12], [-2.60, 114.22]]
+    },
+    {
+      "id": "zone-kpmelayu-flood",
+      "kind": "flood",
+      "shape": "polygon",
+      "label": "Zona genangan Kampung Melayu",
+      "source": "PetaBencana.id + CCTV",
+      "coords": [[-6.2178, 106.8632], [-6.2165, 106.8700], [-6.2240, 106.8728], [-6.2318, 106.8705], [-6.2310, 106.8640], [-6.2250, 106.8620]]
+    },
+    {
+      "id": "zone-dayeuhkolot-flood",
+      "kind": "flood",
+      "shape": "circle",
+      "label": "Zona genangan Dayeuhkolot",
+      "source": "PetaBencana.id",
+      "center": [-6.9875, 107.625],
+      "radius_m": 1200
+    },
+    {
+      "id": "zone-semeru-exclusion",
+      "kind": "volcano_exclusion",
+      "shape": "circle",
+      "label": "Radius larangan 5 km Semeru",
+      "source": "PVMBG",
+      "center": [-8.1077, 112.9224],
+      "radius_m": 5000
+    },
+    {
+      "id": "zone-lewotobi-exclusion",
+      "kind": "volcano_exclusion",
+      "shape": "circle",
+      "label": "Radius larangan 6 km Lewotobi",
+      "source": "PVMBG",
+      "center": [-8.542, 122.775],
+      "radius_m": 6000
+    },
+    {
+      "id": "zone-crime-medan",
+      "kind": "crime",
+      "shape": "polygon",
+      "label": "Area rawan jambret dan begal",
+      "source": "Data demo (agregat laporan)",
+      "period": "Jan-Sep 2026",
+      "coords": [[3.600, 98.620], [3.603, 98.645], [3.590, 98.655], [3.575, 98.648], [3.572, 98.625]]
+    },
+    {
+      "id": "zone-crime-jaktim",
+      "kind": "crime",
+      "shape": "polygon",
+      "label": "Area rawan curanmor",
+      "source": "Data demo (agregat laporan)",
+      "period": "Jan-Sep 2026",
+      "coords": [[-6.205, 106.880], [-6.200, 106.900], [-6.215, 106.912], [-6.228, 106.900], [-6.222, 106.882]]
+    }
+  ],
+  "routes": [
+    {
+      "id": "route-puncak-blocked",
+      "kind": "blocked",
+      "label": "Jalur Puncak tertutup longsor",
+      "reason": "Material longsor di Riung Gunung. Alihkan via Jonggol-Cianjur.",
+      "source": "CCTV Dishub Kab. Bogor",
+      "path": [[-6.6566, 106.8590], [-6.6720, 106.9050], [-6.6880, 106.9420], [-6.6975, 106.9785], [-6.7029, 107.0105]]
+    },
+    {
+      "id": "route-jatinegara-blocked",
+      "kind": "blocked",
+      "label": "Jl. Jatinegara Barat terendam",
+      "reason": "Genangan 60-80 cm, tidak bisa dilalui kendaraan kecil.",
+      "source": "PetaBencana.id",
+      "path": [[-6.2150, 106.8668], [-6.2205, 106.8672], [-6.2262, 106.8681], [-6.2330, 106.8690]]
+    },
+    {
+      "id": "route-cipularang-danger",
+      "kind": "danger",
+      "label": "Tol Cipularang KM 90-95 arah Jakarta",
+      "reason": "Kecelakaan beruntun, lajur kanan ditutup.",
+      "source": "CCTV Jasa Marga",
+      "path": [[-6.6480, 107.4210], [-6.6350, 107.4290], [-6.6233, 107.4352], [-6.6120, 107.4390], [-6.6010, 107.4440]]
+    },
+    {
+      "id": "route-palindra-danger",
+      "kind": "danger",
+      "label": "Tol Palindra, jarak pandang rendah",
+      "reason": "Asap karhutla, jarak pandang di bawah 50 m.",
+      "source": "CCTV Tol Palindra",
+      "path": [[-3.0500, 104.7200], [-3.0800, 104.7080], [-3.1105, 104.6941], [-3.1500, 104.6700], [-3.2050, 104.6550]]
+    }
+  ],
+  "cameras": [
+    { "id": "cam-jkt-kpmelayu", "name": "Bali Mester", "city": "Jakarta Timur", "lat": -6.2214, "lng": 106.8655, "status": "online", "detections_today": 7, "stream_url": "https://example.invalid/jakarta/bali-mester.m3u8", "stream_type": "hls" },
+    { "id": "cam-jkt-hi", "name": "Bundaran HI", "city": "Jakarta Pusat", "lat": -6.1950, "lng": 106.8230, "status": "online", "detections_today": 2, "stream_url": "https://example.invalid/jakarta/bundaran-hi.m3u8", "stream_type": "hls" },
+    { "id": "cam-bgr-puncak", "name": "Simpang Gadog - Puncak", "city": "Kab. Bogor", "lat": -6.6960, "lng": 106.9770, "status": "online", "detections_today": 4, "stream_url": "https://example.invalid/bogor/puncak.jpg", "stream_type": "snapshot" },
+    { "id": "cam-tol-cipularang", "name": "Tol Cipularang KM 92", "city": "Purwakarta", "lat": -6.6225, "lng": 107.4360, "status": "online", "detections_today": 3, "stream_url": "https://example.invalid/jasamarga/cipularang-92.m3u8", "stream_type": "hls" },
+    { "id": "cam-bdg-pasteur", "name": "Gerbang Pasteur", "city": "Bandung", "lat": -6.8930, "lng": 107.5850, "status": "online", "detections_today": 1, "stream_url": "https://example.invalid/bandung/pasteur.m3u8", "stream_type": "hls" },
+    { "id": "cam-mdn-gatsu", "name": "Simpang Gatot Subroto", "city": "Medan", "lat": 3.5890, "lng": 98.6380, "status": "online", "detections_today": 5, "stream_url": "rtsp://example.invalid/medan/gatsu", "stream_type": "rtsp" },
+    { "id": "cam-plg-palindra", "name": "Tol Palindra KM 12", "city": "Ogan Ilir", "lat": -3.1100, "lng": 104.6950, "status": "online", "detections_today": 6, "stream_url": "https://example.invalid/palindra/km12.m3u8", "stream_type": "hls" },
+    { "id": "cam-sby-suramadu", "name": "Gerbang Suramadu", "city": "Surabaya", "lat": -7.2050, "lng": 112.7820, "status": "offline", "detections_today": 0, "stream_url": "https://example.invalid/surabaya/suramadu.m3u8", "stream_type": "hls" }
+  ],
+  "simulator_templates": [
+    { "type": "fire", "title": "Titik api baru terdeteksi", "description": "Asap putih tebal terlihat dari CCTV, diduga pembakaran lahan.", "lat": -3.4012, "lng": 105.6731, "address": "Kec. Tulung Selapan, Kab. OKI, Sumatera Selatan", "source": { "id": "cctv", "label": "CCTV BPBD Sumsel", "kind": "cctv" } },
+    { "type": "fire", "title": "Kebakaran gudang", "description": "Api dan asap hitam keluar dari atap gudang.", "lat": -6.1352, "lng": 106.8133, "address": "Penjaringan, Jakarta Utara", "source": { "id": "cctv", "label": "CCTV Jakarta Smart City", "kind": "cctv" } },
+    { "type": "fire", "title": "Hotspot satelit baru", "description": "Titik panas VIIRS dengan FRP tinggi.", "lat": -1.6101, "lng": 103.6131, "address": "Kab. Muaro Jambi, Jambi", "source": { "id": "firms", "label": "NASA FIRMS (VIIRS)", "kind": "satellite" } },
+    { "type": "flood", "title": "Genangan naik cepat", "description": "Air menutup badan jalan, motor mulai mogok.", "lat": -6.2615, "lng": 106.8106, "address": "Kemang, Jakarta Selatan", "source": { "id": "petabencana", "label": "PetaBencana.id (laporan warga)", "kind": "citizen" } },
+    { "type": "flood", "title": "Banjir rob", "description": "Air laut masuk ke permukiman pesisir.", "lat": -6.9466, "lng": 110.4219, "address": "Tambak Lorok, Semarang Utara", "source": { "id": "petabencana", "label": "PetaBencana.id (laporan warga)", "kind": "citizen" } },
+    { "type": "crime", "title": "Dugaan perkelahian massal", "description": "Kerumunan dan gerakan cepat terdeteksi di persimpangan.", "lat": -6.2297, "lng": 106.6894, "address": "Ciledug, Kota Tangerang", "source": { "id": "cctv", "label": "CCTV Dishub Tangerang", "kind": "cctv" } },
+    { "type": "crime", "title": "Laporan jambret", "description": "Warga melaporkan jambret di dekat halte.", "lat": 3.5952, "lng": 98.6722, "address": "Jl. Sisingamangaraja, Medan Kota", "source": { "id": "demo", "label": "Data demo", "kind": "demo" } },
+    { "type": "accident", "title": "Tabrakan di persimpangan", "description": "Dua kendaraan berhenti melintang, ada korban di jalan.", "lat": -7.2756, "lng": 112.7426, "address": "Jl. Ahmad Yani, Surabaya", "source": { "id": "cctv", "label": "CCTV Surabaya Command Center", "kind": "cctv" } },
+    { "type": "accident", "title": "Bus terguling", "description": "Bus antarkota terguling di tikungan tajam.", "lat": -7.0225, "lng": 110.3567, "address": "Tol Semarang-Solo KM 448, Ungaran", "source": { "id": "cctv", "label": "CCTV Jasa Marga", "kind": "cctv" } },
+    { "type": "landslide", "title": "Tebing longsor", "description": "Tanah tebing runtuh ke badan jalan setelah hujan deras.", "lat": -7.3305, "lng": 108.2207, "address": "Jl. Raya Tasikmalaya-Garut, Kadipaten", "source": { "id": "citizen", "label": "Laporan warga", "kind": "citizen" } },
+    { "type": "landslide", "title": "Longsor jalur Sitinjau", "description": "Material batu menutup satu lajur.", "lat": -0.9562, "lng": 100.4955, "address": "Sitinjau Lauik, Padang, Sumatera Barat", "source": { "id": "citizen", "label": "Laporan warga", "kind": "citizen" } },
+    { "type": "earthquake", "title": "Gempa M5,6 Sulawesi Tengah", "description": "Kedalaman 10 km, dirasakan III-IV MMI di Palu.", "lat": -1.12, "lng": 119.85, "address": "25 km BaratLaut Donggala, Sulawesi Tengah", "source": { "id": "bmkg", "label": "BMKG (TEWS)", "kind": "official" }, "magnitude": 5.6 },
+    { "type": "volcano", "title": "Erupsi Ibu, kolom abu 800 m", "description": "Abu vulkanik condong ke arah barat.", "lat": 1.488, "lng": 127.63, "address": "Gunung Ibu, Halmahera Barat, Maluku Utara", "source": { "id": "magma", "label": "PVMBG / MAGMA Indonesia", "kind": "official" } }
+  ]
+}
