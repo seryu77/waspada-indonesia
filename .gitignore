@@ -9,3 +9,4 @@ backend/weights/
 backend/app/vision/frames/
 *.pt
 *.onnx
+graphify-out/
