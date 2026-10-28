@@ -29,7 +29,7 @@ export function BottomSheet({ expanded, setExpanded, summary, children }: Props)
   return (
     <motion.section
       aria-label="Daftar kejadian"
-      className="pointer-events-auto fixed inset-x-0 bottom-0 z-30 flex flex-col glass-strong rounded-t-md border-t border-line-strong"
+      className="pointer-events-auto fixed inset-x-0 bottom-0 z-30 flex flex-col glass-strong rounded-t-3xl"
       style={{ height }}
       initial={{ y: height }}
       animate={{ y: expanded ? 0 : collapsedY }}

@@ -140,7 +140,7 @@ export default function App() {
 
       <main className="relative h-full w-full">
         {/* Lapisan UI kaca di atas peta penuh: top bar, lalu [rail layer | area peta | feed/detail] */}
-        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col">
+        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col gap-2 p-2 min-[900px]:gap-3 min-[900px]:p-3">
           <div className="pointer-events-auto">
             <TopBar connection={live.connection} lastUpdate={live.lastUpdate} stats={stats} onReport={() => setReportOpen(true)} />
           </div>
@@ -153,9 +153,9 @@ export default function App() {
                 initial={{ height: 0 }}
                 animate={{ height: 'auto' }}
                 exit={{ height: 0, transition: { duration: 0.15 } }}
-                className="pointer-events-auto shrink-0 overflow-hidden bg-[#3A2A06]/85 backdrop-blur-md"
+                className="pointer-events-auto shrink-0 overflow-hidden rounded-xl border border-[#6B4E0E] bg-[#3A2A06]/70 backdrop-blur-xl"
               >
-                <p className="flex items-center gap-2 border-b border-[#6B4E0E] px-4 py-1.5 text-[13px] text-[#FDE68A]">
+                <p className="flex items-center gap-2 px-4 py-1.5 text-[13px] text-[#FDE68A]">
                   <WifiOff size={14} aria-hidden />
                   <span className="sign text-[13px]">Mode offline</span>
                   Server tidak terjangkau. Menampilkan data demo dan simulator lokal.
@@ -164,7 +164,7 @@ export default function App() {
             )}
           </AnimatePresence>
 
-          <div className="relative flex min-h-0 flex-1">
+          <div className="relative flex min-h-0 flex-1 gap-3">
             {!mobile && layerPanel}
 
             {/* Area peta yang terlihat: toast, tombol mobile, banner pilih lokasi */}
@@ -174,12 +174,12 @@ export default function App() {
               </div>
 
               {mobile && (
-                <div className="absolute left-2 top-2 z-10 flex flex-col items-start gap-2">
+                <div className="absolute left-0 top-0 z-10 flex flex-col items-start gap-2">
                   {layerPanel}
                   <button
                     type="button"
                     onClick={() => setReportOpen(true)}
-                    className="glass pointer-events-auto flex h-10 items-center gap-2 rounded-sm border border-line px-3 text-sm font-semibold sm:hidden"
+                    className="glass pointer-events-auto flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold sm:hidden"
                   >
                     <Megaphone size={16} aria-hidden /> Lapor
                   </button>
@@ -194,7 +194,7 @@ export default function App() {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, transition: { duration: 0.12 } }}
-                    className="glass-strong pointer-events-auto absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-3 rounded-sm border border-line-strong px-4 py-2 text-sm font-semibold"
+                    className="glass-strong pointer-events-auto absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full px-4 py-2 text-sm font-semibold"
                   >
                     <MapPin size={16} aria-hidden /> Klik peta untuk memilih lokasi kejadian
                     <button type="button" onClick={() => setPickMode(false)} className="text-dim underline underline-offset-2 hover:text-fg">
@@ -209,7 +209,7 @@ export default function App() {
               <aside
                 id="incident-panel"
                 aria-label="Feed dan detail kejadian"
-                className={`glass scroll-thin pointer-events-auto min-h-0 shrink-0 overflow-y-auto border-l border-line ${wide ? 'w-[400px]' : 'w-[350px]'}`}
+                className={`glass scroll-thin pointer-events-auto min-h-0 shrink-0 overflow-y-auto rounded-2xl ${wide ? 'w-[400px]' : 'w-[350px]'}`}
               >
                 {panel}
               </aside>

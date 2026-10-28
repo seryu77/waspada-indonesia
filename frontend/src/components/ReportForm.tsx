@@ -77,7 +77,7 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
         aria-modal="true"
         aria-labelledby="report-h"
         style={{ display: hidden ? 'none' : undefined }}
-        className="scroll-thin pointer-events-auto fixed inset-x-0 bottom-0 top-auto z-50 max-h-[90vh] overflow-y-auto glass-strong rounded-t-md border border-line-strong p-4 sm:rounded-md sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2"
+        className="scroll-thin pointer-events-auto fixed inset-x-0 bottom-0 top-auto z-50 max-h-[90vh] overflow-y-auto glass-strong rounded-t-3xl p-4 sm:rounded-2xl sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 24 }}
@@ -107,7 +107,7 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
                     type="button"
                     aria-pressed={active}
                     onClick={() => setType(h)}
-                    className={`flex h-10 items-center gap-2 rounded-sm border px-2 text-left text-sm transition-colors duration-150 ${
+                    className={`flex h-10 items-center gap-2 rounded-lg border px-2 text-left text-sm transition-colors duration-150 ${
                       active ? 'border-fg bg-raised text-fg' : 'border-line text-dim hover:border-line-strong hover:text-fg'
                     }`}
                   >
@@ -129,13 +129,13 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="Contoh: air setinggi lutut menutup jalan di depan pasar"
-              className="w-full rounded-sm border border-line-strong bg-black/30 px-3 py-2 text-sm text-fg placeholder:text-muted-fg focus:border-fg focus:outline-none"
+              className="w-full rounded-lg border border-line-strong bg-black/30 px-3 py-2 text-sm text-fg placeholder:text-muted-fg focus:border-fg focus:outline-none"
             />
           </div>
 
           <div>
             <span className="sign mb-1.5 block text-[13px] text-muted-fg">Lokasi</span>
-            <div className="rounded-sm border border-line bg-black/30 px-3 py-2 text-sm">
+            <div className="rounded-lg border border-line bg-black/30 px-3 py-2 text-sm">
               {picked ? (
                 <span className="flex items-center gap-2 text-sm tabular">
                   <MapPin size={14} aria-hidden /> {coord(picked.lat, picked.lng)}
@@ -145,17 +145,17 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
               )}
             </div>
             <div className="mt-2 grid grid-cols-2 gap-2">
-              <button type="button" onClick={onPickOnMap} className="flex h-10 items-center justify-center gap-2 rounded-sm border border-line-strong text-sm font-semibold text-dim hover:border-fg hover:text-fg">
+              <button type="button" onClick={onPickOnMap} className="flex h-10 items-center justify-center gap-2 rounded-lg border border-line-strong text-sm font-semibold text-dim hover:border-fg hover:text-fg">
                 <MapPin size={16} aria-hidden /> Pilih di peta
               </button>
-              <button type="button" onClick={useMyLocation} className="flex h-10 items-center justify-center gap-2 rounded-sm border border-line-strong text-sm font-semibold text-dim hover:border-fg hover:text-fg">
+              <button type="button" onClick={useMyLocation} className="flex h-10 items-center justify-center gap-2 rounded-lg border border-line-strong text-sm font-semibold text-dim hover:border-fg hover:text-fg">
                 <LocateFixed size={16} aria-hidden /> Lokasi saya
               </button>
             </div>
           </div>
 
           <div>
-            <label htmlFor="report-photo" className="flex h-10 items-center gap-2 rounded-sm border border-dashed border-line-strong px-3 text-sm text-dim hover:border-fg hover:text-fg">
+            <label htmlFor="report-photo" className="flex h-10 items-center gap-2 rounded-lg border border-dashed border-line-strong px-3 text-sm text-dim hover:border-fg hover:text-fg">
               <ImagePlus size={16} aria-hidden />
               <span className="truncate">{photo ? photo.name : 'Tambah foto (opsional)'}</span>
             </label>
@@ -172,7 +172,7 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
           <button
             type="submit"
             disabled={sending}
-            className="flex h-11 w-full items-center justify-center gap-2 rounded-sm bg-fg text-bg transition-colors duration-150 hover:bg-white disabled:opacity-60"
+            className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-fg text-bg transition-colors duration-150 hover:bg-white disabled:opacity-60"
           >
             <Send size={16} aria-hidden />
             <span className="sign text-[15px]">{sending ? 'Mengirim' : 'Kirim laporan'}</span>

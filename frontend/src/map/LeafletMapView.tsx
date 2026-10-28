@@ -41,8 +41,8 @@ function ReactMarker({ lat, lng, z = 0, children }: { lat: number; lng: number; 
 function fitPadding(): { tl: [number, number]; br: [number, number] } {
   const w = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.offsetWidth ?? 0
   const top = (document.querySelector('header') as HTMLElement | null)?.offsetHeight ?? 52
-  if (window.innerWidth < 900) return { tl: [8, top + 48], br: [8, 120] }
-  return { tl: [w('aside#layer-panel') + 16, top + 16], br: [w('aside#incident-panel') + 16, 16] }
+  if (window.innerWidth < 900) return { tl: [8, top + 56], br: [8, 120] }
+  return { tl: [w('aside#layer-panel') + 28, top + 28], br: [w('aside#incident-panel') + 28, 28] }
 }
 
 function Controller({ focus, pickMode, onPick }: Pick<MapProps, 'focus' | 'pickMode' | 'onPick'>) {

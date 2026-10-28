@@ -71,7 +71,7 @@ function Stat({ label, value, color }: { label: string; value: number; color?: s
 
 export function TopBar({ connection, lastUpdate, stats, onReport }: Props) {
   return (
-    <header className="pointer-events-auto glass flex h-13 shrink-0 items-stretch border-b border-line">
+    <header className="pointer-events-auto glass flex h-13 shrink-0 items-stretch overflow-hidden rounded-2xl">
       <div className="flex items-center gap-2.5 px-3 md:px-4">
         <span className="grid h-7 w-7 place-items-center bg-danger text-white" aria-hidden>
           <TriangleAlert size={16} strokeWidth={2.5} />
@@ -96,14 +96,14 @@ export function TopBar({ connection, lastUpdate, stats, onReport }: Props) {
         <button
           type="button"
           onClick={onReport}
-          className="hidden h-9 items-center gap-2 rounded-sm border border-line-strong px-3 text-sm font-semibold text-dim transition-colors duration-150 hover:border-fg hover:text-fg sm:flex"
+          className="hidden h-9 items-center gap-2 rounded-lg border border-line-strong px-3 text-sm font-semibold text-dim transition-colors duration-150 hover:border-fg hover:text-fg sm:flex"
         >
           <Megaphone size={16} aria-hidden />
           Lapor kejadian
         </button>
         <a
           href="tel:112"
-          className="flex h-9 items-center gap-2 rounded-sm bg-alarm px-3 text-white transition-colors duration-150 hover:bg-alarm-hover"
+          className="flex h-9 items-center gap-2 rounded-lg bg-alarm px-3 text-white transition-colors duration-150 hover:bg-alarm-hover"
           aria-label="Hubungi 112, layanan darurat"
         >
           <Phone size={16} aria-hidden />

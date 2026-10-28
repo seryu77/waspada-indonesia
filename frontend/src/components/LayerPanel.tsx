@@ -101,7 +101,7 @@ export function LayerControls({ layers, setLayers, counts, cameraCount, onTrigge
           <button
             type="button"
             onClick={onTriggerDemo}
-            className="flex h-9 w-full items-center justify-center gap-2 rounded-sm border border-line-strong text-sm font-semibold text-dim transition-colors duration-150 hover:border-sev-critical hover:text-fg"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-line-strong text-sm font-semibold text-dim transition-colors duration-150 hover:border-sev-critical hover:text-fg"
           >
             <Siren size={15} className="text-sev-critical" aria-hidden />
             Picu kejadian demo
@@ -167,7 +167,7 @@ export function LayerPanel({ open, setOpen, mobile, ...controls }: PanelProps) {
             onClick={() => setOpen(true)}
             aria-expanded={open}
             aria-controls="layer-panel"
-            className="glass pointer-events-auto flex h-10 items-center gap-2 rounded-sm border border-line px-3 text-sm font-semibold"
+            className="glass pointer-events-auto flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold"
           >
             <Layers size={16} aria-hidden />
             Layer
@@ -192,7 +192,7 @@ export function LayerPanel({ open, setOpen, mobile, ...controls }: PanelProps) {
                   role="dialog"
                   aria-modal="true"
                   aria-label="Pengaturan layer peta"
-                  className="glass-strong scroll-thin fixed inset-y-0 left-0 z-50 w-[min(300px,86vw)] overflow-y-auto border-r border-line"
+                  className="glass-strong scroll-thin fixed inset-y-2 left-2 z-50 w-[min(300px,86vw)] overflow-y-auto rounded-2xl"
                   initial={{ x: '-100%' }}
                   animate={{ x: 0 }}
                   exit={{ x: '-100%', transition: { duration: 0.18 } }}
@@ -223,7 +223,7 @@ export function LayerPanel({ open, setOpen, mobile, ...controls }: PanelProps) {
     <aside
       id="layer-panel"
       aria-label="Pengaturan layer peta"
-      className={`glass pointer-events-auto flex h-full shrink-0 flex-col overflow-hidden border-r border-line ${open ? 'w-62' : 'w-12'}`}
+      className={`glass pointer-events-auto flex h-full shrink-0 flex-col overflow-hidden rounded-2xl ${open ? 'w-62' : 'w-12'}`}
     >
       <AnimatePresence mode="wait" initial={false}>
         {open ? (

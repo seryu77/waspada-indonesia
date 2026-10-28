@@ -87,7 +87,7 @@ export function DispatchTimeline({ dispatch, onConfirm, onCancel }: Props) {
                 type="button"
                 disabled={busy !== null}
                 onClick={() => run('confirm')}
-                className="flex h-11 items-center justify-center gap-2 rounded-sm bg-alarm text-white transition-colors duration-150 hover:bg-alarm-hover disabled:opacity-60"
+                className="flex h-11 items-center justify-center gap-2 rounded-lg bg-alarm text-white transition-colors duration-150 hover:bg-alarm-hover disabled:opacity-60"
               >
                 <Send size={16} aria-hidden />
                 <span className="sign text-[15px]">Kirim sekarang</span>
@@ -96,7 +96,7 @@ export function DispatchTimeline({ dispatch, onConfirm, onCancel }: Props) {
                 type="button"
                 disabled={busy !== null}
                 onClick={() => run('cancel')}
-                className="flex h-11 items-center justify-center gap-2 rounded-sm border border-line-strong px-4 text-dim transition-colors duration-150 hover:border-fg hover:text-fg disabled:opacity-60"
+                className="flex h-11 items-center justify-center gap-2 rounded-lg border border-line-strong px-4 text-dim transition-colors duration-150 hover:border-fg hover:text-fg disabled:opacity-60"
               >
                 <Ban size={16} aria-hidden />
                 <span className="sign text-[15px]">Batalkan</span>
