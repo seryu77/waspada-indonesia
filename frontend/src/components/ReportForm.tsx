@@ -77,7 +77,7 @@ export function ReportForm({ picked, setPicked, onPickOnMap, onClose, onSubmit, 
         aria-modal="true"
         aria-labelledby="report-h"
         style={{ display: hidden ? 'none' : undefined }}
-        className="scroll-thin pointer-events-auto fixed inset-x-0 bottom-0 top-auto z-50 max-h-[90vh] overflow-y-auto glass-strong rounded-t-3xl p-4 sm:rounded-2xl sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2"
+        className="scroll-thin pointer-events-auto fixed inset-x-2 bottom-2 top-auto z-50 max-h-[88dvh] overflow-y-auto glass-strong rounded-3xl p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-2xl sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-[440px] sm:-translate-x-1/2 sm:-translate-y-1/2"
         initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 24 }}

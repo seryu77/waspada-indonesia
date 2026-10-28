@@ -167,7 +167,7 @@ export function LayerPanel({ open, setOpen, mobile, ...controls }: PanelProps) {
             onClick={() => setOpen(true)}
             aria-expanded={open}
             aria-controls="layer-panel"
-            className="glass pointer-events-auto flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold"
+            className="glass pointer-events-auto flex h-11 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold"
           >
             <Layers size={16} aria-hidden />
             Layer

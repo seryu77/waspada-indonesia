@@ -11,11 +11,11 @@ interface Props {
   onReport: () => void
 }
 
-const STATUS: Record<Connection, { label: string; color: string }> = {
+const STATUS: Record<Connection, { label: string; short?: string; color: string }> = {
   live: { label: 'Live', color: '#3CCF7E' },
   stale: { label: 'Basi', color: '#EAB308' },
   offline: { label: 'Offline', color: '#F2555A' },
-  connecting: { label: 'Menyambung', color: '#929AA4' },
+  connecting: { label: 'Menyambung', short: 'Sambung', color: '#929AA4' },
 }
 
 function LiveIndicator({ connection, lastUpdate }: Pick<Props, 'connection' | 'lastUpdate'>) {
@@ -38,8 +38,15 @@ function LiveIndicator({ connection, lastUpdate }: Pick<Props, 'connection' | 'l
         )}
         <span className="relative h-2 w-2" style={{ background: s.color }} />
       </span>
-      <span className="sign text-[13px]" style={{ color: s.color }}>
-        {s.label}
+      <span className="sign whitespace-nowrap text-[13px]" style={{ color: s.color }}>
+        {s.short ? (
+          <>
+            <span className="min-[420px]:hidden">{s.short}</span>
+            <span className="hidden min-[420px]:inline">{s.label}</span>
+          </>
+        ) : (
+          s.label
+        )}
       </span>
       <span className="hidden text-xs text-muted-fg tabular sm:inline">{lastUpdate ? clockWIB(lastUpdate) : 'menunggu server'}</span>
     </div>
@@ -72,16 +79,16 @@ function Stat({ label, value, color }: { label: string; value: number; color?: s
 export function TopBar({ connection, lastUpdate, stats, onReport }: Props) {
   return (
     <header className="pointer-events-auto glass flex h-13 shrink-0 items-stretch overflow-hidden rounded-2xl">
-      <div className="flex items-center gap-2.5 px-3 md:px-4">
+      <div className="flex shrink-0 items-center gap-2 px-2.5 sm:gap-2.5 md:px-4">
         <span className="grid h-7 w-7 place-items-center bg-danger text-white" aria-hidden>
           <TriangleAlert size={16} strokeWidth={2.5} />
         </span>
-        <h1 className="font-display text-[19px] font-bold uppercase leading-none tracking-wide">
-          Waspada <span className="font-semibold text-muted-fg">Nusantara</span>
+        <h1 className="whitespace-nowrap font-display text-[17px] font-bold uppercase leading-none tracking-wide sm:text-[19px]">
+          Waspada <span className="hidden font-semibold text-muted-fg min-[400px]:inline">Nusantara</span>
         </h1>
       </div>
 
-      <div className="flex items-center border-l border-line px-3 md:px-4">
+      <div className="flex min-w-0 items-center border-l border-line px-2.5 md:px-4">
         <LiveIndicator connection={connection} lastUpdate={lastUpdate} />
       </div>
 
@@ -92,7 +99,7 @@ export function TopBar({ connection, lastUpdate, stats, onReport }: Props) {
         <span className="border-l border-line" aria-hidden />
       </div>
 
-      <div className="ml-auto flex items-center gap-2 px-2 md:px-3">
+      <div className="ml-auto flex shrink-0 items-center gap-2 px-2 md:px-3">
         <button
           type="button"
           onClick={onReport}

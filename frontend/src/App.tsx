@@ -169,17 +169,17 @@ export default function App() {
 
             {/* Area peta yang terlihat: toast, tombol mobile, banner pilih lokasi */}
             <div className="relative min-w-0 flex-1">
-              <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center px-3">
+              <div className="pointer-events-none absolute inset-x-0 top-[3.25rem] z-20 flex justify-center min-[900px]:top-3 min-[900px]:px-3">
                 <Toasts toasts={live.newCritical} onOpen={select} onDismiss={live.dismissToast} />
               </div>
 
               {mobile && (
-                <div className="absolute left-0 top-0 z-10 flex flex-col items-start gap-2">
+                <div className="absolute left-0 top-0 z-10 flex items-center gap-2">
                   {layerPanel}
                   <button
                     type="button"
                     onClick={() => setReportOpen(true)}
-                    className="glass pointer-events-auto flex h-10 items-center gap-2 rounded-xl px-3 text-sm font-semibold sm:hidden"
+                    className="glass pointer-events-auto flex h-11 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold sm:hidden"
                   >
                     <Megaphone size={16} aria-hidden /> Lapor
                   </button>
