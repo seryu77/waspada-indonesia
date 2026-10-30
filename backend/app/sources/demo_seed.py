@@ -26,7 +26,8 @@ def load_seed() -> tuple[list[Incident], list[Zone], list[Route], list[str], lis
         if v:
             inc.verification = Verification(**v, verified_at=_iso(max(0, age - 1)))
         if d:
-            if d["state"] == "countdown":
+            if d["state"] in ("countdown", "review"):
+                # Dimulai saat server menyala lewat manager.route (auto atau review sesuai confidence)
                 countdown_ids.append(inc.id)
             else:
                 tl = [TimelineEntry(at=_iso(t.pop("age_min")), **t) for t in [dict(x) for x in d["timeline"]]]

@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 
 from . import db
 from .config import settings
-from .dispatch.manager import manager
+from .dispatch.manager import PENDING, manager
 from .hub import hub
 from .models import Incident, Source, dump
 from .pipeline import process_candidate
@@ -52,11 +52,19 @@ def _get(incident_id: str) -> Incident:
     return inc
 
 
+@router.get("/incidents/{incident_id}/evidence")
+async def incident_evidence(incident_id: str) -> dict:
+    """Bukti pendukung untuk operator: kondisi lokasi, kejadian sekitar, kamera, frame deteksi."""
+    from .evidence import gather
+
+    return await gather(_get(incident_id))
+
+
 @router.post("/incidents/{incident_id}/dispatch/confirm")
 async def dispatch_confirm(incident_id: str) -> dict:
     inc = _get(incident_id)
-    if not inc.dispatch or inc.dispatch.state != "countdown":
-        raise HTTPException(409, "Tidak ada hitung mundur aktif untuk kejadian ini")
+    if not inc.dispatch or inc.dispatch.state not in PENDING:
+        raise HTTPException(409, "Tidak ada dispatch yang menunggu keputusan untuk kejadian ini")
     inc = await manager.confirm(incident_id)
     return dump(inc)  # type: ignore[arg-type]
 
@@ -64,8 +72,8 @@ async def dispatch_confirm(incident_id: str) -> dict:
 @router.post("/incidents/{incident_id}/dispatch/cancel")
 async def dispatch_cancel(incident_id: str) -> dict:
     inc = _get(incident_id)
-    if not inc.dispatch or inc.dispatch.state != "countdown":
-        raise HTTPException(409, "Tidak ada hitung mundur aktif untuk kejadian ini")
+    if not inc.dispatch or inc.dispatch.state not in PENDING:
+        raise HTTPException(409, "Tidak ada dispatch yang menunggu keputusan untuk kejadian ini")
     inc = await manager.cancel(incident_id)
     return dump(inc)  # type: ignore[arg-type]
 

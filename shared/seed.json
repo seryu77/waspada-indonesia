@@ -234,8 +234,9 @@
         "model": "contoh verifikasi (data demo)",
         "stage": "verify",
         "simulated": true,
-        "needs_manual_review": false
-      }
+        "needs_manual_review": true
+      },
+      "dispatch": { "state": "review", "agency": "PJR Polda Sumsel", "mode": "simulate", "timeline": [] }
     },
     {
       "id": "inc-dayeuhkolot-01",

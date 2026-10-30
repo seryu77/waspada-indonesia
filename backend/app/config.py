@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     dispatch_mode: str = "simulate"
     dispatch_webhook_url: str = ""
     dispatch_countdown_s: int = 45
-    dispatch_confidence_min: float = 0.8
+    dispatch_confidence_min: float = 0.87
 
     demo_mode: bool = True
     simulator_min_s: float = 20

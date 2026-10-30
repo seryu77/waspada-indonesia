@@ -9,7 +9,7 @@ HazardType = Literal["fire", "flood", "crime", "earthquake", "landslide", "accid
 Severity = Literal["low", "medium", "high", "critical"]
 SourceKind = Literal["official", "satellite", "cctv", "citizen", "demo", "simulator"]
 Verdict = Literal["confirmed", "false_alarm", "uncertain"]
-DispatchState = Literal["countdown", "sent", "cancelled", "failed"]
+DispatchState = Literal["review", "countdown", "sent", "cancelled", "failed"]
 Actor = Literal["ai", "operator", "system"]
 
 SEVERITY_RANK = {"low": 1, "medium": 2, "high": 3, "critical": 4}

@@ -5,6 +5,6 @@ import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <App operator={/^\/operator\/?$/.test(window.location.pathname)} />
   </StrictMode>,
 )

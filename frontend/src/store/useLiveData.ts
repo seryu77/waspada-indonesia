@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Camera, Connection, Incident, ReportInput, Severity, Snapshot } from '../types'
 import { SIM_TEMPLATES, seedSnapshot } from '../lib/seed'
-import { heuristicVerify, resolveDispatch, shouldAutoDispatch, simulateIncident, startCountdown } from '../lib/localEngine'
+import { heuristicVerify, resolveDispatch, routeDispatch, simulateIncident } from '../lib/localEngine'
+
+const isPending = (i: Incident) => i.dispatch?.state === 'countdown' || i.dispatch?.state === 'review'
 
 const STALE_AFTER_MS = 45_000
 const RECONNECT_MAX_MS = 15_000
@@ -136,7 +138,8 @@ export function useLiveData(): LiveData {
       return window.setTimeout(() => {
         const v = heuristicVerify(inc)
         const done: Incident = { ...inc, verifying: false, verification: v, updated_at: new Date().toISOString() }
-        if (shouldAutoDispatch(v)) done.dispatch = startCountdown(v)
+        const d = routeDispatch(v)
+        if (d) done.dispatch = d
         applyIncident(done)
       }, 2500)
     },
@@ -156,7 +159,7 @@ export function useLiveData(): LiveData {
           .sort((a, b) => b.reported_at.localeCompare(a.reported_at))
         const expire = new Set(
           sims
-            .filter((i, idx) => (idx >= 12 || Date.now() - Date.parse(i.reported_at) > 8 * 60_000) && i.dispatch?.state !== 'countdown')
+            .filter((i, idx) => (idx >= 12 || Date.now() - Date.parse(i.reported_at) > 8 * 60_000) && !isPending(i))
             .map((i) => i.id),
         )
         if (expire.size === 0) return snap
@@ -206,7 +209,7 @@ export function useLiveData(): LiveData {
   const localResolve = useCallback((id: string, how: 'confirmed' | 'cancelled') => {
     setSnapshot((s) => ({
       ...s,
-      incidents: s.incidents.map((i) => (i.id === id && i.dispatch?.state === 'countdown' ? { ...i, dispatch: resolveDispatch(i.dispatch, how) } : i)),
+      incidents: s.incidents.map((i) => (i.id === id && i.dispatch && isPending(i) ? { ...i, dispatch: resolveDispatch(i.dispatch, how) } : i)),
     }))
   }, [])
 

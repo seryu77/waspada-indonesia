@@ -1,6 +1,6 @@
 import raw from '@shared/seed.json'
 import type { Camera, Dispatch, Incident, Route, Snapshot, TimelineEntry, Verification, Zone } from '../types'
-import { COUNTDOWN_S } from './localEngine'
+import { COUNTDOWN_S, startReview } from './localEngine'
 
 type RawTimeline = Omit<TimelineEntry, 'at'> & { age_min: number }
 type RawIncident = Omit<Incident, 'reported_at' | 'updated_at' | 'status' | 'dispatch' | 'verification'> & {
@@ -27,7 +27,9 @@ export function seedSnapshot(now = Date.now()): Snapshot {
     if (verification) inc.verification = { ...verification, verified_at: iso(now, Math.max(0, age_min - 1)) }
     if (dispatch) {
       const timeline = dispatch.timeline.map(({ age_min: a, ...t }) => ({ ...t, at: iso(now, a) }))
-      if (dispatch.state === 'countdown') {
+      if (dispatch.state === 'review' && inc.verification) {
+        inc.dispatch = { ...startReview(inc.verification, now), agency: dispatch.agency }
+      } else if (dispatch.state === 'countdown') {
         // Countdown demo dimulai saat halaman dibuka
         timeline.push(
           { at: iso(now, 0.5), actor: 'ai', action: 'verified', note: 'Terverifikasi AI (confidence 0,90)' },

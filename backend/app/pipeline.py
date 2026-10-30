@@ -1,11 +1,11 @@
-"""Alur kandidat: tandai sedang diverifikasi -> verifier (LLM atau heuristik) -> audit -> dispatch."""
+"""Alur kandidat: tandai sedang diverifikasi -> verifier (LLM atau heuristik) -> audit -> dispatch (auto atau review)."""
 
 import asyncio
 import logging
 
 from . import db
 from .config import settings
-from .dispatch.manager import manager, should_dispatch
+from .dispatch.manager import manager
 from .hub import hub
 from .llm.context import build_context, haversine_km
 from .llm.verifier import verify_incident
@@ -34,6 +34,5 @@ async def process_candidate(inc: Incident, frames: list[bytes] | None = None) ->
         inc.status = "resolved"
     await hub.upsert_incident(inc)
     await db.audit(inc.id, "ai", f"verified_{v.stage}", dump(v))
-    if should_dispatch(inc):
-        await manager.start(inc)
+    await manager.route(inc)
     return inc

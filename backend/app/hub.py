@@ -33,6 +33,7 @@ class Hub:
                 "verifier": "claude" if settings.llm_enabled else "heuristik (simulasi)",
                 "dispatch_mode": settings.dispatch_mode,
                 "countdown_s": settings.dispatch_countdown_s,
+                "auto_dispatch_min": settings.dispatch_confidence_min,
                 "server_time": now_iso(),
             },
         }

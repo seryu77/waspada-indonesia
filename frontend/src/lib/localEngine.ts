@@ -4,7 +4,10 @@ import type { Dispatch, HazardType, Incident, Severity, SourceKind, Verification
 import type { SimTemplate } from './seed'
 
 export const COUNTDOWN_S = 45
-export const DISPATCH_CONFIDENCE_MIN = 0.8
+/** Confidence minimal untuk auto-dispatch. Di bawahnya operator 112 harus memvalidasi dulu. */
+export const DISPATCH_CONFIDENCE_MIN = 0.87
+
+const pct = (x: number) => `${Math.round(x * 100)}%`
 
 export const AGENCY: Record<HazardType, string> = {
   fire: 'Damkar + BPBD setempat',
@@ -56,8 +59,29 @@ export function heuristicVerify(inc: Incident): Verification {
   }
 }
 
-export function shouldAutoDispatch(v: Verification): boolean {
-  return v.verdict === 'confirmed' && v.confidence >= DISPATCH_CONFIDENCE_MIN && (v.severity === 'high' || v.severity === 'critical')
+/** Sama dengan backend dispatch_route: 'auto' (hitung mundur), 'review' (tunggu operator), atau null. */
+export function dispatchRoute(v: Verification): 'auto' | 'review' | null {
+  if (v.severity !== 'high' && v.severity !== 'critical') return null
+  if (v.verdict === 'false_alarm') return null
+  return v.verdict === 'confirmed' && v.confidence >= DISPATCH_CONFIDENCE_MIN ? 'auto' : 'review'
+}
+
+export function startReview(v: Verification, now = Date.now()): Dispatch {
+  const at = new Date(now).toISOString()
+  return {
+    state: 'review',
+    agency: v.recommended_agency,
+    mode: 'simulate',
+    timeline: [
+      { at, actor: 'ai', action: 'verified', note: `Diverifikasi (confidence ${pct(v.confidence)})` },
+      { at, actor: 'system', action: 'review_requested', note: `Confidence di bawah ${pct(DISPATCH_CONFIDENCE_MIN)}, menunggu validasi operator 112` },
+    ],
+  }
+}
+
+export function routeDispatch(v: Verification): Dispatch | undefined {
+  const r = dispatchRoute(v)
+  return r === 'auto' ? startCountdown(v) : r === 'review' ? startReview(v) : undefined
 }
 
 export function startCountdown(v: Verification, now = Date.now()): Dispatch {
@@ -77,12 +101,16 @@ export function startCountdown(v: Verification, now = Date.now()): Dispatch {
 
 export function resolveDispatch(d: Dispatch, how: 'confirmed' | 'cancelled' | 'auto'): Dispatch {
   const at = new Date().toISOString()
+  const review = d.state === 'review'
   if (how === 'cancelled') {
-    return { ...d, state: 'cancelled', deadline: undefined, timeline: [...d.timeline, { at, actor: 'operator', action: 'cancelled', note: 'Dibatalkan operator' }] }
+    const t = review ? { action: 'rejected', note: 'Ditolak operator setelah dicek' } : { action: 'cancelled', note: 'Dibatalkan operator' }
+    return { ...d, state: 'cancelled', deadline: undefined, timeline: [...d.timeline, { at, actor: 'operator', ...t }] }
   }
   const pre =
     how === 'confirmed'
-      ? { at, actor: 'operator' as const, action: 'confirmed', note: 'Operator menekan Kirim sekarang' }
+      ? review
+        ? { at, actor: 'operator' as const, action: 'validated', note: 'Operator memvalidasi dan mengirim ke 112' }
+        : { at, actor: 'operator' as const, action: 'confirmed', note: 'Operator menekan Kirim sekarang' }
       : { at, actor: 'system' as const, action: 'auto_sent', note: 'Tidak ada aksi operator, terkirim otomatis' }
   return {
     ...d,

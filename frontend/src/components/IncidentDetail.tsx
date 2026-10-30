@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
-import { ArrowLeft, Bot, LocateFixed } from 'lucide-react'
-import type { Camera, Incident } from '../types'
+import { ArrowLeft, Bot, CircleCheck, LocateFixed } from 'lucide-react'
+import type { Camera, Incident, Snapshot } from '../types'
 import { HAZARDS, SEVERITY, SOURCE_KIND_LABEL } from '../lib/hazards'
 import { effectiveSeverity } from '../lib/sort'
 import { coord, dateTimeWIB, timeAgo } from '../lib/format'
 import { HazardBadge, SegmentBar, SeverityTag, VerifyBadge } from './bits'
 import { DispatchTimeline } from './DispatchTimeline'
+import { EvidencePanel } from './EvidencePanel'
 
 interface Props {
   incident: Incident
@@ -14,6 +15,12 @@ interface Props {
   onFocus: () => void
   onConfirm: () => Promise<void>
   onCancel: () => Promise<void>
+  /** Halaman operator 112: tampilkan kontrol dispatch. Halaman publik hanya melihat status terkirim. */
+  operator: boolean
+  autoMin?: number
+  snapshot: Snapshot
+  offline: boolean
+  onSelect: (id: string) => void
 }
 
 const VERDICT = {
@@ -31,7 +38,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm, onCancel }: Props) {
+export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm, onCancel, operator, autoMin, snapshot, offline, onSelect }: Props) {
   const v = i.verification
   const sev = effectiveSeverity(i)
   return (
@@ -95,7 +102,9 @@ export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm
         )}
       </dl>
 
-      {i.evidence && i.evidence.length > 0 && (
+      {operator && <EvidencePanel incident={i} snapshot={snapshot} offline={offline} onSelect={onSelect} />}
+
+      {!operator && i.evidence && i.evidence.length > 0 && (
         <section aria-labelledby="ev-h" className="border-t border-line px-4 py-4">
           <h3 id="ev-h" className="sign mb-2 text-[13px] text-muted-fg">
             Frame bukti <span className="normal-case tracking-normal">(wajah dan plat diblur)</span>
@@ -127,7 +136,7 @@ export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm
                   <span className="text-base text-muted-fg">%</span>
                 </p>
                 <div className="mt-1.5">
-                  <SegmentBar value={v.confidence} color={v.confidence >= 0.8 ? '#3CCF7E' : v.confidence >= 0.5 ? '#EAB308' : '#929AA4'} />
+                  <SegmentBar value={v.confidence} color={v.confidence >= (autoMin ?? 0.87) ? '#3CCF7E' : v.confidence >= 0.5 ? '#EAB308' : '#929AA4'} />
                 </div>
               </div>
             </div>
@@ -150,7 +159,14 @@ export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm
         )}
       </section>
 
-      {i.dispatch && <DispatchTimeline dispatch={i.dispatch} onConfirm={onConfirm} onCancel={onCancel} />}
+      {operator && i.dispatch && (
+        <DispatchTimeline dispatch={i.dispatch} confidence={v?.confidence} autoMin={autoMin} onConfirm={onConfirm} onCancel={onCancel} />
+      )}
+      {!operator && i.dispatch?.state === 'sent' && (
+        <p className="flex items-center gap-2 border-t border-line px-4 py-4 text-sm text-accent" role="status">
+          <CircleCheck size={16} aria-hidden /> Petugas sudah diberitahu lewat command center 112.
+        </p>
+      )}
     </article>
   )
 }

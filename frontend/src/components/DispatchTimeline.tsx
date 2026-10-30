@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Ban, CircleCheck, CircleX, Send } from 'lucide-react'
+import { Ban, CircleCheck, CircleX, Send, ShieldQuestion } from 'lucide-react'
 import type { Actor, Dispatch } from '../types'
 import { clockWIB } from '../lib/format'
+import { DISPATCH_CONFIDENCE_MIN } from '../lib/localEngine'
 
 interface Props {
   dispatch: Dispatch
+  confidence?: number
+  /** Ambang auto-dispatch dari server (snapshot.meta), fallback ke nilai lokal */
+  autoMin?: number
   onConfirm: () => Promise<void>
   onCancel: () => Promise<void>
 }
@@ -22,7 +26,7 @@ function useRemaining(deadline?: string) {
   return deadline ? Math.max(0, (Date.parse(deadline) - now) / 1000) : 0
 }
 
-export function DispatchTimeline({ dispatch, onConfirm, onCancel }: Props) {
+export function DispatchTimeline({ dispatch, confidence, autoMin = DISPATCH_CONFIDENCE_MIN, onConfirm, onCancel }: Props) {
   const remaining = useRemaining(dispatch.state === 'countdown' ? dispatch.deadline : undefined)
   const [busy, setBusy] = useState<'confirm' | 'cancel' | null>(null)
   const total = dispatch.countdown_s ?? 45
@@ -52,7 +56,47 @@ export function DispatchTimeline({ dispatch, onConfirm, onCancel }: Props) {
       </p>
 
       <AnimatePresence mode="wait" initial={false}>
-        {counting ? (
+        {dispatch.state === 'review' ? (
+          <motion.div key="review" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.1 } }} className="mt-3">
+            <div className="flex items-start gap-3 rounded-lg border border-[#6B4E0E] bg-[#3A2A06]/60 px-3 py-2.5" role="status">
+              <ShieldQuestion size={18} className="mt-0.5 shrink-0 text-sev-medium" aria-hidden />
+              <div>
+                <p className="sign text-[15px] text-sev-medium">Menunggu validasi operator</p>
+                <p className="mt-0.5 text-[13px] leading-relaxed text-dim">
+                  {confidence !== undefined ? (
+                    <>
+                      Kepastian AI <span className="font-semibold text-fg tabular">{Math.round(confidence * 100)}%</span>, di bawah ambang auto-dispatch{' '}
+                      <span className="tabular">{Math.round(autoMin * 100)}%</span>.
+                    </>
+                  ) : (
+                    'Kepastian AI di bawah ambang auto-dispatch.'
+                  )}{' '}
+                  Cek bukti dan konteks, lalu putuskan. Tidak akan terkirim tanpa persetujuan.
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => run('confirm')}
+                className="flex h-11 items-center justify-center gap-2 rounded-lg bg-alarm text-white transition-colors duration-150 hover:bg-alarm-hover disabled:opacity-60"
+              >
+                <Send size={16} aria-hidden />
+                <span className="sign text-[15px]">Validasi & kirim</span>
+              </button>
+              <button
+                type="button"
+                disabled={busy !== null}
+                onClick={() => run('cancel')}
+                className="flex h-11 items-center justify-center gap-2 rounded-lg border border-line-strong px-4 text-dim transition-colors duration-150 hover:border-fg hover:text-fg disabled:opacity-60"
+              >
+                <Ban size={16} aria-hidden />
+                <span className="sign text-[15px]">Tolak</span>
+              </button>
+            </div>
+          </motion.div>
+        ) : counting ? (
           <motion.div key="cd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, transition: { duration: 0.1 } }} className="mt-3">
             <div className="flex items-end justify-between">
               <span className="text-sm text-dim">Terkirim otomatis dalam</span>
@@ -103,7 +147,7 @@ export function DispatchTimeline({ dispatch, onConfirm, onCancel }: Props) {
               </button>
             </div>
             <p className="mt-2 text-xs leading-relaxed text-muted-fg">
-              Operator memegang keputusan akhir. Tanpa aksi, payload diteruskan ke command center. Sistem ini tidak pernah menelepon 112 secara langsung.
+              Kepastian AI {Math.round(autoMin * 100)}% atau lebih, masuk auto-dispatch. Operator tetap bisa membatalkan. Tanpa aksi, payload diteruskan ke command center. Sistem ini tidak pernah menelepon 112 secara langsung.
             </p>
           </motion.div>
         ) : (
@@ -118,7 +162,7 @@ export function DispatchTimeline({ dispatch, onConfirm, onCancel }: Props) {
           >
             {dispatch.state === 'sent' ? <CircleCheck size={18} className="text-accent" aria-hidden /> : <CircleX size={18} className="text-muted-fg" aria-hidden />}
             <span className="sign text-[15px]" style={{ color: dispatch.state === 'sent' ? '#3CCF7E' : '#C3C8CF' }}>
-              {dispatch.state === 'sent' ? 'Terkirim' : dispatch.state === 'cancelled' ? 'Dibatalkan operator' : 'Gagal terkirim'}
+              {dispatch.state === 'sent' ? 'Terkirim' : dispatch.state === 'cancelled' ? (dispatch.timeline.some((t) => t.action === 'rejected') ? 'Ditolak operator' : 'Dibatalkan operator') : 'Gagal terkirim'}
             </span>
             {dispatch.state === 'sent' && dispatch.sent_at && <span className="ml-auto text-xs text-muted-fg tabular">{clockWIB(dispatch.sent_at)}</span>}
           </motion.div>

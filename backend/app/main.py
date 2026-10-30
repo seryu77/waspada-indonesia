@@ -97,7 +97,7 @@ async def lifespan(_: FastAPI):
     if settings.demo_mode:
         for cid in countdown_ids:
             if cid in hub.incidents:
-                await manager.start(hub.incidents[cid])
+                await manager.route(hub.incidents[cid])
         tasks.append(asyncio.create_task(run_simulator(templates)))
     for src in [BMKGSource(), FIRMSSource(), PetaBencanaSource(), MagmaSource()]:
         if src.enabled():

@@ -1,8 +1,11 @@
-"""Auto-dispatch dengan human-in-the-loop.
+"""Dispatch 112 dengan human-in-the-loop. Semua aksi ada di halaman operator 112.
 
-Aturan: verdict confirmed + confidence >= DISPATCH_CONFIDENCE_MIN + severity tinggi/kritis
--> hitung mundur DISPATCH_COUNTDOWN_S. Operator bisa "Kirim sekarang" atau "Batalkan".
-Tanpa aksi, payload terkirim otomatis lewat adapter. Semua keputusan dicatat di audit log.
+Hanya kejadian aktif dengan severity tinggi/kritis yang masuk alur dispatch:
+- confirmed + confidence >= DISPATCH_CONFIDENCE_MIN (87%): auto-dispatch. Hitung mundur
+  DISPATCH_COUNTDOWN_S lalu terkirim otomatis. Operator masih bisa "Kirim sekarang" atau "Batalkan".
+- di bawah ambang (atau verdict uncertain): status "review". Tidak ada timer, tidak pernah
+  terkirim sendiri. Operator harus "Validasi & kirim" atau "Tolak".
+Semua keputusan dicatat di audit log.
 """
 
 import asyncio
@@ -19,16 +22,28 @@ from .webhook import WebhookAdapter
 
 log = logging.getLogger("waspada.dispatch")
 
+# Status yang masih menunggu keputusan (bisa dikirim atau dibatalkan)
+PENDING = ("review", "countdown")
+
 
 def make_adapter() -> DispatchAdapter:
     return WebhookAdapter() if settings.dispatch_mode == "webhook" else SimulateAdapter()
 
 
-def should_dispatch(inc: Incident) -> bool:
+def dispatch_route(inc: Incident) -> str | None:
+    """"auto" (hitung mundur), "review" (tunggu validasi operator), atau None (tidak perlu dispatch)."""
     v = inc.verification
-    if not v or inc.dispatch:
-        return False
-    return v.verdict == "confirmed" and v.confidence >= settings.dispatch_confidence_min and v.severity in ("high", "critical")
+    if not v or inc.dispatch or inc.status != "active":
+        return None
+    if v.severity not in ("high", "critical") or v.verdict == "false_alarm":
+        return None
+    if v.verdict == "confirmed" and v.confidence >= settings.dispatch_confidence_min:
+        return "auto"
+    return "review"
+
+
+def pct(x: float) -> str:
+    return f"{round(x * 100)}%"
 
 
 def build_payload(inc: Incident, decided_by: str) -> dict:
@@ -87,6 +102,37 @@ class DispatchManager:
         self._tasks[inc.id] = asyncio.create_task(self._countdown(inc.id, secs))
         return inc
 
+    async def request_review(self, inc: Incident, agency: str | None = None) -> Incident:
+        """Confidence di bawah ambang: masuk antrean validasi operator, tanpa timer."""
+        v = inc.verification
+        tl = []
+        if v:
+            tl.append(TimelineEntry(actor="ai", action="verified", note=f"Diverifikasi {v.model} (confidence {pct(v.confidence)})"))
+        tl.append(
+            TimelineEntry(
+                actor="system",
+                action="review_requested",
+                note=f"Confidence di bawah {pct(settings.dispatch_confidence_min)}, menunggu validasi operator 112",
+            )
+        )
+        inc.dispatch = Dispatch(
+            state="review",
+            agency=agency or (v.recommended_agency if v else "BPBD setempat"),
+            mode=self.adapter.mode,  # type: ignore[arg-type]
+            timeline=tl,
+        )
+        await hub.upsert_incident(inc)
+        await db.audit(inc.id, "system", "review_requested", {"confidence": v.confidence if v else None, "agency": inc.dispatch.agency})
+        return inc
+
+    async def route(self, inc: Incident) -> Incident:
+        r = dispatch_route(inc)
+        if r == "auto":
+            return await self.start(inc)
+        if r == "review":
+            return await self.request_review(inc)
+        return inc
+
     async def _countdown(self, incident_id: str, secs: float) -> None:
         try:
             await asyncio.sleep(secs)
@@ -96,7 +142,7 @@ class DispatchManager:
 
     async def _send(self, incident_id: str, actor: str, action: str, note: str) -> Incident | None:
         inc = hub.incidents.get(incident_id)
-        if not inc or not inc.dispatch or inc.dispatch.state != "countdown":
+        if not inc or not inc.dispatch or inc.dispatch.state not in PENDING:
             return inc
         d = inc.dispatch
         d.timeline.append(TimelineEntry(actor=actor, action=action, note=note))  # type: ignore[arg-type]
@@ -121,17 +167,21 @@ class DispatchManager:
 
     async def confirm(self, incident_id: str) -> Incident | None:
         self._stop_timer(incident_id)
+        inc = hub.incidents.get(incident_id)
+        if inc and inc.dispatch and inc.dispatch.state == "review":
+            return await self._send(incident_id, "operator", "validated", "Operator memvalidasi dan mengirim ke 112")
         return await self._send(incident_id, "operator", "confirmed", "Operator menekan Kirim sekarang")
 
     async def cancel(self, incident_id: str) -> Incident | None:
         self._stop_timer(incident_id)
         inc = hub.incidents.get(incident_id)
-        if not inc or not inc.dispatch or inc.dispatch.state != "countdown":
+        if not inc or not inc.dispatch or inc.dispatch.state not in PENDING:
             return inc
+        action, note = ("rejected", "Ditolak operator setelah dicek") if inc.dispatch.state == "review" else ("cancelled", "Dibatalkan operator")
         inc.dispatch.state = "cancelled"
         inc.dispatch.deadline = None
-        inc.dispatch.timeline.append(TimelineEntry(actor="operator", action="cancelled", note="Dibatalkan operator"))
-        await db.audit(incident_id, "operator", "cancelled", {})
+        inc.dispatch.timeline.append(TimelineEntry(actor="operator", action=action, note=note))
+        await db.audit(incident_id, "operator", action, {})
         await hub.upsert_incident(inc)
         return inc
 

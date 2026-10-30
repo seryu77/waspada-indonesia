@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Siren } from 'lucide-react'
+import { ShieldQuestion, Siren } from 'lucide-react'
 import type { Incident } from '../types'
 import { SEVERITY, SOURCE_KIND_LABEL } from '../lib/hazards'
 import { effectiveSeverity } from '../lib/sort'
@@ -11,9 +11,10 @@ interface Props {
   incidents: Incident[]
   selectedId: string | null
   onSelect: (id: string) => void
+  operator: boolean
 }
 
-export function IncidentFeed({ incidents, selectedId, onSelect }: Props) {
+export function IncidentFeed({ incidents, selectedId, onSelect, operator }: Props) {
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {
     const t = window.setInterval(() => setNow(Date.now()), 15_000)
@@ -75,9 +76,14 @@ export function IncidentFeed({ incidents, selectedId, onSelect }: Props) {
                   <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="text-xs text-dim">{SOURCE_KIND_LABEL[i.source.kind]}</span>
                     <VerifyBadge incident={i} />
-                    {i.dispatch?.state === 'countdown' && (
+                    {operator && i.dispatch?.state === 'countdown' && (
                       <span className="sign inline-flex items-center gap-1 text-[12px] text-sev-critical">
-                        <Siren size={12} aria-hidden /> Hitung mundur 112
+                        <Siren size={12} aria-hidden /> Auto-dispatch 112
+                      </span>
+                    )}
+                    {operator && i.dispatch?.state === 'review' && (
+                      <span className="sign inline-flex items-center gap-1 text-[12px] text-sev-medium">
+                        <ShieldQuestion size={12} aria-hidden /> Butuh validasi
                       </span>
                     )}
                   </span>

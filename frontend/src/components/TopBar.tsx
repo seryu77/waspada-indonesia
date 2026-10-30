@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Megaphone, Phone, TriangleAlert } from 'lucide-react'
+import { Map as MapIcon, Megaphone, Phone, TriangleAlert } from 'lucide-react'
 import type { Connection } from '../types'
 import { clockWIB } from '../lib/format'
 
 interface Props {
   connection: Connection
   lastUpdate: number | null
-  stats: { active: number; critical: number; dispatched: number }
+  stats: { active: number; critical: number; dispatched: number; review: number }
   onReport: () => void
+  operator: boolean
 }
 
 const STATUS: Record<Connection, { label: string; short?: string; color: string }> = {
@@ -76,7 +77,7 @@ function Stat({ label, value, color }: { label: string; value: number; color?: s
   )
 }
 
-export function TopBar({ connection, lastUpdate, stats, onReport }: Props) {
+export function TopBar({ connection, lastUpdate, stats, onReport, operator }: Props) {
   return (
     <header className="pointer-events-auto glass flex h-13 shrink-0 items-stretch overflow-hidden rounded-2xl">
       <div className="flex shrink-0 items-center gap-2 px-2.5 sm:gap-2.5 md:px-4">
@@ -84,7 +85,7 @@ export function TopBar({ connection, lastUpdate, stats, onReport }: Props) {
           <TriangleAlert size={16} strokeWidth={2.5} />
         </span>
         <h1 className="whitespace-nowrap font-display text-[17px] font-bold uppercase leading-none tracking-wide sm:text-[19px]">
-          Waspada <span className="hidden font-semibold text-muted-fg min-[400px]:inline">Nusantara</span>
+          Waspada <span className="hidden font-semibold text-muted-fg min-[400px]:inline">{operator ? 'Operator 112' : 'Nusantara'}</span>
         </h1>
       </div>
 
@@ -95,28 +96,41 @@ export function TopBar({ connection, lastUpdate, stats, onReport }: Props) {
       <div className="hidden lg:flex" aria-label="Ringkasan statistik">
         <Stat label="Kejadian aktif" value={stats.active} />
         <Stat label="Kritis" value={stats.critical} color="#F2555A" />
+        {operator && <Stat label="Butuh validasi" value={stats.review} color="#EAB308" />}
         <Stat label="Petugas dikirim" value={stats.dispatched} color="#3CCF7E" />
         <span className="border-l border-line" aria-hidden />
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2 px-2 md:px-3">
-        <button
-          type="button"
-          onClick={onReport}
-          className="hidden h-9 items-center gap-2 rounded-lg border border-line-strong px-3 text-sm font-semibold text-dim transition-colors duration-150 hover:border-fg hover:text-fg sm:flex"
-        >
-          <Megaphone size={16} aria-hidden />
-          Lapor kejadian
-        </button>
-        <a
-          href="tel:112"
-          className="flex h-9 items-center gap-2 rounded-lg bg-alarm px-3 text-white transition-colors duration-150 hover:bg-alarm-hover"
-          aria-label="Hubungi 112, layanan darurat"
-        >
-          <Phone size={16} aria-hidden />
-          <span className="font-display text-lg font-bold leading-none tabular">112</span>
-          <span className="sign hidden text-[13px] sm:inline">Darurat</span>
-        </a>
+        {operator ? (
+          <a
+            href="/"
+            className="flex h-9 items-center gap-2 rounded-lg border border-line-strong px-3 text-sm font-semibold text-dim transition-colors duration-150 hover:border-fg hover:text-fg"
+          >
+            <MapIcon size={16} aria-hidden />
+            <span className="hidden sm:inline">Peta publik</span>
+          </a>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={onReport}
+              className="hidden h-9 items-center gap-2 rounded-lg border border-line-strong px-3 text-sm font-semibold text-dim transition-colors duration-150 hover:border-fg hover:text-fg sm:flex"
+            >
+              <Megaphone size={16} aria-hidden />
+              Lapor kejadian
+            </button>
+            <a
+              href="tel:112"
+              className="flex h-9 items-center gap-2 rounded-lg bg-alarm px-3 text-white transition-colors duration-150 hover:bg-alarm-hover"
+              aria-label="Hubungi 112, layanan darurat"
+            >
+              <Phone size={16} aria-hidden />
+              <span className="font-display text-lg font-bold leading-none tabular">112</span>
+              <span className="sign hidden text-[13px] sm:inline">Darurat</span>
+            </a>
+          </>
+        )}
       </div>
     </header>
   )

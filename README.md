@@ -47,8 +47,9 @@ Vite mem-proxy `/api` dan `/ws` ke `http://127.0.0.1:8000`. Kalau backend mati, 
 1. Buka `http://localhost:5173`. Peta Indonesia langsung tampil dengan semua peringatan. Indikator **LIVE** di top bar.
 2. Tunggu 20 sampai 30 detik: simulator memunculkan kejadian baru, toast muncul untuk kejadian kritis.
 3. Atau klik **Picu kejadian demo** di panel Layer: kejadian kritis dari CCTV muncul, status "Diverifikasi AI...", lalu terverifikasi.
-4. Klik toast atau item feed: peta terbang ke lokasi, panel berganti ke detail berisi hasil verifikasi AI (verdict, confidence, alasan, model) dan **hitung mundur 112**.
-5. Tekan **Kirim sekarang** atau **Batalkan**. Tanpa aksi, payload terkirim otomatis saat hitung mundur habis. Semua keputusan tercatat di `GET /api/audit`.
+4. Buka halaman operator 112 di `http://localhost:5173/operator`. Kontrol dispatch hanya ada di sini; halaman publik hanya melihat status "petugas sudah diberitahu". Klik toast atau item feed: peta terbang ke lokasi, panel berganti ke detail berisi hasil verifikasi AI (verdict, confidence, alasan, model).
+5. Kepastian AI **87% atau lebih**: **hitung mundur 112** otomatis, operator bisa **Kirim sekarang** atau **Batalkan**, tanpa aksi terkirim saat hitung mundur habis. **Di bawah 87%**: status **Butuh validasi**, tidak ada timer dan tidak pernah terkirim sendiri, operator harus **Validasi & kirim** atau **Tolak** (contoh: Tol Palindra, 82%). Semua keputusan tercatat di `GET /api/audit`.
+   Di atas tombol validasi ada panel **Bukti pendukung**: indikator otomatis (mendukung atau melemahkan), kondisi lokasi (suhu, kelembapan, angin, hujan sekarang dan 24 jam, kualitas udara AQI dan PM2.5, ketinggian), siaran langsung CCTV pendeteksi atau terdekat, rekaman frame saat deteksi, dan kejadian lain dalam 15 km.
 6. Klik **Lapor** untuk mengirim laporan warga (jenis, deskripsi, lokasi dari peta atau GPS, foto opsional).
 
 ---
@@ -70,7 +71,7 @@ Vite mem-proxy `/api` dan `/ws` ke `http://127.0.0.1:8000`. Kalau backend mati, 
 | `DISPATCH_MODE` | `simulate` | `simulate` atau `webhook` |
 | `DISPATCH_WEBHOOK_URL` | kosong | Endpoint command center (mode webhook) |
 | `DISPATCH_COUNTDOWN_S` | `45` | Lama hitung mundur |
-| `DISPATCH_CONFIDENCE_MIN` | `0.8` | Ambang confidence untuk auto-dispatch |
+| `DISPATCH_CONFIDENCE_MIN` | `0.87` | Ambang auto-dispatch. Di bawahnya wajib divalidasi operator 112 |
 | `DEMO_MODE` | `true` | Seed data + simulator + tombol demo |
 | `ENABLE_BMKG` / `ENABLE_PETABENCANA` / `ENABLE_MAGMA` | `true` | Sumber data nyata gratis tanpa key |
 | `ENABLE_VISION` | `false` | Pipeline CCTV + YOLO |
@@ -109,8 +110,11 @@ flowchart LR
   FIRMS --> HUB
   MAGMA --> HUB
 
-  HUB --> DM{Confirmed,<br/>conf >= 0.8,<br/>severity tinggi?}
+  HUB --> DM{Confirmed,<br/>conf >= 0.87,<br/>severity tinggi?}
   DM -->|ya| CD[Hitung mundur 45 dtk]
+  DM -->|conf < 0.87| RV[Butuh validasi<br/>operator 112]
+  RV -->|Validasi & kirim| AD
+  RV -->|Tolak| AUD
   CD -->|operator: Kirim / timeout| AD[Dispatch adapter<br/>simulate / webhook]
   CD -->|operator: Batalkan| AUD
   AD --> CC[Command center pemda]
@@ -150,6 +154,7 @@ waspada/
 | `POST /api/incidents/{id}/dispatch/confirm` | Operator: kirim sekarang |
 | `POST /api/incidents/{id}/dispatch/cancel` | Operator: batalkan |
 | `POST /api/reports` | Laporan warga (multipart: `type`, `description`, `lat`, `lng`, `photo` opsional) |
+| `GET /api/incidents/{id}/evidence` | Bukti untuk operator: kondisi lokasi (Open-Meteo), kejadian sekitar, kamera, frame deteksi |
 | `GET /api/audit` | Audit log keputusan AI dan operator |
 | `POST /api/demo/trigger` | Mode demo: buat kejadian kritis CCTV sekarang |
 | `GET /api/health` | Status server |
@@ -187,7 +192,9 @@ Data seed diberi label "data demo" di UI. Kejadian dari simulator diberi label "
 Belum ada API publik untuk 112 Indonesia. Layanan 112 dikelola pemda (command center) bersama Komdigi, dan panggilan otomatis dari AI tanpa pengecekan berisiko membanjiri operator dengan false alarm. Karena itu:
 
 - **Kode ini tidak pernah menelepon 112.** Adapter `simulate` (default) hanya mencatat payload. Adapter `webhook` mengirim JSON ke endpoint command center yang dikonfigurasi.
-- **Human-in-the-loop**: verdict confirmed + confidence >= 0,8 + severity tinggi/kritis memulai hitung mundur 45 detik. Operator bisa Kirim sekarang atau Batalkan. Tanpa aksi, terkirim otomatis.
+- **Halaman operator** (`/operator`): satu-satunya tempat kontrol dispatch. Antrean diurutkan: butuh validasi, lalu hitung mundur, lalu severity.
+- **Auto-dispatch**: severity tinggi/kritis + verdict confirmed + confidence >= 0,87 memulai hitung mundur 45 detik. Operator bisa Kirim sekarang atau Batalkan. Tanpa aksi, terkirim otomatis.
+- **Validasi operator**: severity tinggi/kritis dengan confidence di bawah 0,87 (atau verdict uncertain) masuk status `review`. Tidak ada timer; hanya terkirim kalau operator menekan Validasi & kirim, atau ditutup dengan Tolak.
 - Payload (`waspada.dispatch.v1`): jenis, koordinat, alamat, waktu, ringkasan AI, link frame bukti, instansi yang direkomendasikan, siapa yang memutuskan.
 - Semua keputusan AI, sistem, dan operator tercatat di tabel `audit_log` (`GET /api/audit`).
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { AnimatePresence, motion, type Variants } from 'motion/react'
-import type { Camera, Incident } from '../types'
+import type { Camera, Incident, Snapshot } from '../types'
 import { IncidentFeed } from './IncidentFeed'
 import { IncidentDetail } from './IncidentDetail'
 
@@ -14,6 +14,10 @@ interface Props {
   onConfirm: (id: string) => Promise<void>
   onCancel: (id: string) => Promise<void>
   header?: ReactNode
+  operator: boolean
+  autoMin?: number
+  snapshot: Snapshot
+  offline: boolean
 }
 
 // Feed -> detail bergeser ke kiri (masuk lebih dalam), detail -> feed sebaliknya. Keluar lebih cepat dari masuk.
@@ -24,7 +28,7 @@ const slide: Variants = {
 }
 
 /** Isi panel kanan: feed atau detail, dengan transisi geser. */
-export function IncidentPanel({ incidents, selected, cameras, onSelect, onBack, onFocus, onConfirm, onCancel, header }: Props) {
+export function IncidentPanel({ incidents, selected, cameras, onSelect, onBack, onFocus, onConfirm, onCancel, header, operator, autoMin, snapshot, offline }: Props) {
   const dir = selected ? 1 : -1
   return (
     <AnimatePresence mode="wait" initial={false} custom={dir}>
@@ -44,12 +48,17 @@ export function IncidentPanel({ incidents, selected, cameras, onSelect, onBack, 
             onFocus={() => onFocus(selected)}
             onConfirm={() => onConfirm(selected.id)}
             onCancel={() => onCancel(selected.id)}
+            operator={operator}
+            autoMin={autoMin}
+            snapshot={snapshot}
+            offline={offline}
+            onSelect={onSelect}
           />
         </motion.div>
       ) : (
         <motion.div key="feed" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
           {header}
-          <IncidentFeed incidents={incidents} selectedId={null} onSelect={onSelect} />
+          <IncidentFeed incidents={incidents} selectedId={null} onSelect={onSelect} operator={operator} />
         </motion.div>
       )}
     </AnimatePresence>

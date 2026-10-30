@@ -4,7 +4,7 @@ export type HazardType = 'fire' | 'flood' | 'crime' | 'earthquake' | 'landslide'
 export type Severity = 'low' | 'medium' | 'high' | 'critical'
 export type SourceKind = 'official' | 'satellite' | 'cctv' | 'citizen' | 'demo' | 'simulator'
 export type Verdict = 'confirmed' | 'false_alarm' | 'uncertain'
-export type DispatchState = 'countdown' | 'sent' | 'cancelled' | 'failed'
+export type DispatchState = 'review' | 'countdown' | 'sent' | 'cancelled' | 'failed'
 export type Actor = 'ai' | 'operator' | 'system'
 export type LatLng = [number, number]
 
@@ -106,7 +106,7 @@ export interface Snapshot {
   zones: Zone[]
   routes: Route[]
   cameras: Camera[]
-  meta?: { verifier: string; dispatch_mode: string; countdown_s: number; server_time: string }
+  meta?: { verifier: string; dispatch_mode: string; countdown_s: number; auto_dispatch_min?: number; server_time: string }
 }
 
 export type Connection = 'connecting' | 'live' | 'stale' | 'offline'
@@ -124,4 +124,58 @@ export interface ReportInput {
   lat: number
   lng: number
   photo?: File | null
+}
+
+// Bukti pendukung untuk operator 112 (GET /api/incidents/{id}/evidence)
+export interface WeatherNow {
+  observed_at: string
+  description: string
+  weather_code?: number
+  temperature_c?: number
+  apparent_c?: number
+  humidity_pct?: number
+  precipitation_mm?: number
+  rain_24h_mm?: number
+  cloud_cover_pct?: number
+  wind_speed_kmh?: number
+  wind_gust_kmh?: number
+  wind_direction_deg?: number
+  is_day: boolean
+  elevation_m?: number
+}
+
+export interface AirNow {
+  observed_at: string
+  us_aqi?: number
+  pm2_5?: number
+  pm10?: number
+  carbon_monoxide?: number
+}
+
+export interface NearbyItem {
+  id: string
+  type: HazardType
+  title: string
+  distance_km: number
+  severity: Severity
+  source_label: string
+  source_kind: SourceKind
+  reported_at: string
+}
+
+export interface Evidence {
+  incident_id: string
+  conditions: { weather: WeatherNow | null; air: AirNow | null; fetched_at: string; provider: string }
+  nearby: NearbyItem[]
+  nearby_radius_km: number
+  camera: (Camera & { distance_km: number; detected_by: boolean }) | null
+  frames: string[]
+  detection: { source: string; kind: SourceKind; description: string }
+  /** true kalau dirakit di browser karena server tidak terjangkau */
+  local?: boolean
+}
+
+export interface Signal {
+  label: string
+  effect: 'support' | 'against' | 'info'
 }

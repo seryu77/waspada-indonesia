@@ -4,7 +4,7 @@ import { MapPin, Megaphone, WifiOff } from 'lucide-react'
 import type { HazardType, Incident, LayerVisibility, ReportInput } from './types'
 import { useLiveData } from './store/useLiveData'
 import { HAZARD_ORDER } from './lib/hazards'
-import { effectiveSeverity, sortIncidents } from './lib/sort'
+import { effectiveSeverity, sortForOperator, sortIncidents } from './lib/sort'
 import { MapView } from './map/MapView'
 import type { FocusTarget } from './map/types'
 import { TopBar } from './components/TopBar'
@@ -32,7 +32,7 @@ function useMedia(query: string) {
   return match
 }
 
-export default function App() {
+export default function App({ operator = false }: { operator?: boolean }) {
   const live = useLiveData()
   const { snapshot } = live
   const mobile = !useMedia('(min-width: 900px)')
@@ -48,7 +48,10 @@ export default function App() {
   const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(null)
 
   const active = useMemo(() => snapshot.incidents.filter((i) => i.status === 'active'), [snapshot.incidents])
-  const visible = useMemo(() => sortIncidents(active.filter((i) => layers.hazards[i.type])), [active, layers.hazards])
+  const visible = useMemo(
+    () => (operator ? sortForOperator : sortIncidents)(active.filter((i) => layers.hazards[i.type])),
+    [active, layers.hazards, operator],
+  )
   const zones = useMemo(() => snapshot.zones.filter((z) => layers.zones[z.kind]), [snapshot.zones, layers.zones])
   const routes = useMemo(() => snapshot.routes.filter((r) => layers.routes[r.kind]), [snapshot.routes, layers.routes])
   const cameras = layers.cameras ? snapshot.cameras : []
@@ -65,6 +68,7 @@ export default function App() {
       active: active.length,
       critical: active.filter((i) => effectiveSeverity(i) === 'critical').length,
       dispatched: active.filter((i) => i.dispatch?.state === 'sent').length,
+      review: active.filter((i) => i.dispatch?.state === 'review').length,
     }),
     [active],
   )
@@ -94,8 +98,11 @@ export default function App() {
 
   const panelHeader = (
     <div className="flex h-11 items-center justify-between border-b border-line px-4">
-      <h2 className="sign text-[14px]">Kejadian aktif</h2>
-      <span className="text-xs text-muted-fg tabular">{visible.length} ditampilkan</span>
+      <h2 className="sign text-[14px]">{operator ? 'Antrean operator' : 'Kejadian aktif'}</h2>
+      <span className="text-xs text-muted-fg tabular">
+        {operator && stats.review > 0 && <span className="text-sev-medium">{stats.review} butuh validasi, </span>}
+        {visible.length} ditampilkan
+      </span>
     </div>
   )
 
@@ -110,6 +117,10 @@ export default function App() {
       onConfirm={live.confirmDispatch}
       onCancel={live.cancelDispatch}
       header={mobile ? undefined : panelHeader}
+      operator={operator}
+      autoMin={snapshot.meta?.auto_dispatch_min}
+      snapshot={snapshot}
+      offline={live.offline}
     />
   )
 
@@ -142,7 +153,7 @@ export default function App() {
         {/* Lapisan UI kaca di atas peta penuh: top bar, lalu [rail layer | area peta | feed/detail] */}
         <div className="pointer-events-none absolute inset-0 z-10 flex flex-col gap-2 p-2 min-[900px]:gap-3 min-[900px]:p-3">
           <div className="pointer-events-auto">
-            <TopBar connection={live.connection} lastUpdate={live.lastUpdate} stats={stats} onReport={() => setReportOpen(true)} />
+            <TopBar connection={live.connection} lastUpdate={live.lastUpdate} stats={stats} onReport={() => setReportOpen(true)} operator={operator} />
           </div>
 
           <AnimatePresence initial={false}>
@@ -176,13 +187,15 @@ export default function App() {
               {mobile && (
                 <div className="absolute left-0 top-0 z-10 flex items-center gap-2">
                   {layerPanel}
-                  <button
-                    type="button"
-                    onClick={() => setReportOpen(true)}
-                    className="glass pointer-events-auto flex h-11 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold sm:hidden"
-                  >
-                    <Megaphone size={16} aria-hidden /> Lapor
-                  </button>
+                  {!operator && (
+                    <button
+                      type="button"
+                      onClick={() => setReportOpen(true)}
+                      className="glass pointer-events-auto flex h-11 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold sm:hidden"
+                    >
+                      <Megaphone size={16} aria-hidden /> Lapor
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -247,7 +260,11 @@ export default function App() {
                   <div className="flex items-baseline gap-3 text-[13px] tabular">
                     <span>{stats.active} aktif</span>
                     <span className="text-sev-critical">{stats.critical} kritis</span>
-                    <span className="text-accent">{stats.dispatched} dikirim</span>
+                    {operator ? (
+                      <span className="text-sev-medium">{stats.review} validasi</span>
+                    ) : (
+                      <span className="text-accent">{stats.dispatched} dikirim</span>
+                    )}
                   </div>
                 </div>
               }
