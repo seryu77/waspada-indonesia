@@ -1,4 +1,4 @@
-"""Verifier heuristik saat ANTHROPIC_API_KEY tidak ada. Selalu berlabel "simulasi" di UI."""
+"""Verifier heuristik saat API key LLM tidak ada. Selalu berlabel "simulasi" di UI."""
 
 import random
 

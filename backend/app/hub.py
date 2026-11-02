@@ -30,7 +30,7 @@ class Hub:
             "routes": [dump(r) for r in self.routes.values()],
             "cameras": [dump(c) for c in self.cameras.values()],
             "meta": {
-                "verifier": "claude" if settings.llm_enabled else "heuristik (simulasi)",
+                "verifier": settings.verifier_label,
                 "dispatch_mode": settings.dispatch_mode,
                 "countdown_s": settings.dispatch_countdown_s,
                 "auto_dispatch_min": settings.dispatch_confidence_min,

@@ -110,7 +110,7 @@ async def lifespan(_: FastAPI):
         tasks += await start_vision()
     log.info(
         "Waspada Nusantara siap. verifier=%s dispatch=%s demo=%s",
-        "claude" if settings.llm_enabled else "heuristik (simulasi)",
+        settings.verifier_label,
         settings.dispatch_mode,
         settings.demo_mode,
     )

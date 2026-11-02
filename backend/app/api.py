@@ -39,7 +39,7 @@ async def health() -> dict:
         "ok": True,
         "incidents": len(hub.incidents),
         "clients": len(hub.clients),
-        "verifier": "claude" if settings.llm_enabled else "heuristik (simulasi)",
+        "verifier": settings.verifier_label,
         "dispatch_mode": settings.dispatch_mode,
         "vision": settings.enable_vision,
     }
