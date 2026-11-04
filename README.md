@@ -2,7 +2,7 @@
 
 Peta real-time kondisi darurat Indonesia. Satu layar menampilkan semua peringatan aktif (karhutla, banjir, gempa, longsor, kecelakaan, gunung api, kriminal), deteksi otomatis dari CCTV publik dengan computer vision, verifikasi AI dua tahap untuk menekan false alarm, dan alur dispatch ke command center 112 dengan operator tetap memegang keputusan.
 
-Demo berjalan penuh **tanpa API key apa pun**.
+Demo berjalan penuh **tanpa API key apa pun**. Versi online berjalan di Vercel (lihat [Deploy ke Vercel](#deploy-ke-vercel)).
 
 ---
 
@@ -51,25 +51,31 @@ Vite mem-proxy `/api` dan `/ws` ke `http://127.0.0.1:8000`. Kalau backend mati, 
 5. Kepastian AI **87% atau lebih**: **hitung mundur 112** otomatis, operator bisa **Kirim sekarang** atau **Batalkan**, tanpa aksi terkirim saat hitung mundur habis. **Di bawah 87%**: status **Butuh validasi**, tidak ada timer dan tidak pernah terkirim sendiri, operator harus **Validasi & kirim** atau **Tolak** (contoh: Tol Palindra, 82%). Semua keputusan tercatat di `GET /api/audit`.
    Di atas tombol validasi ada panel **Bukti pendukung**: indikator otomatis (mendukung atau melemahkan), kondisi lokasi (suhu, kelembapan, angin, hujan sekarang dan 24 jam, kualitas udara AQI dan PM2.5, ketinggian), siaran langsung CCTV pendeteksi atau terdekat, rekaman frame saat deteksi, dan kejadian lain dalam 15 km.
 6. Klik **Lapor** untuk mengirim laporan warga (jenis, deskripsi, lokasi dari peta atau GPS, foto opsional).
-7. Klik marker **LIVE** di peta untuk menonton CCTV resmi secara langsung. Di halaman operator, tombol **Video wall** menampilkan grid semua CCTV live per kota, plus link ke portal CCTV resmi daerah lain.
+7. Saat peta di-zoom jauh, CCTV tampil sebagai satu penanda per kota berisi jumlah kamera. Klik penanda itu untuk zoom ke kota tersebut, lalu klik marker **LIVE** untuk menonton CCTV resmi secara langsung. Di halaman operator, tombol **Video wall** menampilkan grid CCTV live per kota (6 per halaman).
 
 ### CCTV live dari sumber resmi
 
-Kamera live diambil hanya dari siaran yang dibuka instansi untuk publik, didaftarkan di `backend/cctv_sources.json`:
+Kamera live diambil hanya dari siaran yang dibuka instansi untuk publik, tanpa token, login, atau menembus pembatasan. Sumbernya didaftarkan di `backend/cctv_sources.json`, lalu `scripts/sync_cctv.py` menguji setiap kamera: harus menyala, servernya mengizinkan diputar dari situs lain (CORS terbuka), dan cukup cepat ditonton (satu segmen video terunduh lebih cepat dari durasi putarnya). Kamera yang gagal diuji ulang sekali.
 
-YouTube dan portal link saat ini dimatikan (`enable_youtube`, `enable_portals` di config) karena tidak bisa diproses computer vision.
+| Jenis sumber | Kunci config | Daerah saat ini |
+|---|---|---|
+| CCTV jalan tol dari daftar resmi BPJT Kementerian PU (`bpjt.pu.go.id/cctv`), difilter per area (bbox) | `toll_pages` | Jakarta (JORR S, Akses Tanjung Priok, JORR W1, Dalam Kota Kelapa Gading-Pulo Gebang, Becakayu) |
+| Stream HLS dari portal ATCS yang mencantumkan alamat video di halamannya | `hls_pages` | Banjarbaru, Ciamis, Pekanbaru (masuk kalau servernya cukup cepat) |
+| Server Restreamer pemda dengan player embed resmi (oEmbed). Ditonton lewat player resmi, dibaca computer vision lewat HLS-nya (`vision_url`) | `restreamers` | Banda Aceh, Kota Magelang, Pati |
+| YouTube resmi pemda dan BPBD | `channels` | Dimatikan (`enable_youtube: false`), tidak boleh diproses computer vision |
+| Link portal resmi yang tidak bisa di-embed | `portals` | Dimatikan (`enable_portals: false`) |
 
-- **YouTube resmi** pemda, dinas, BPBD, dan Badan Geologi (Dishub Pontianak, Pemkot Yogyakarta, Gunungkidul, Samarinda, Magelang, Demak, Bantul, BPBD Sleman, gunung api PVMBG, dan lainnya).
-- **Embed resmi** dari server Restreamer pemda (Kota Magelang, Banda Aceh, Pati) yang menyediakan kode embed lewat oEmbed. Daftar kamera dan koordinatnya dibaca dari portal resmi masing-masing.
-- **CCTV jalan tol** dari daftar resmi BPJT Kementerian PU (`bpjt.pu.go.id/cctv`), difilter per area (saat ini Jakarta). Tol yang mengunci streamnya ke domain sendiri (misal Jasa Marga) otomatis tidak diambil.
-- **Stream HLS resmi** dari portal ATCS yang mencantumkan alamat video di halamannya (Banjarbaru, Ciamis, Pekanbaru). Hanya kamera yang servernya mengizinkan diputar dari situs lain (CORS terbuka, tanpa token atau login), sedang menyala, dan cukup cepat ditonton yang diambil. Portal yang mengunci streamnya (misal Banjarmasin, Banyumas) tidak dipakai.
-- **Portal resmi** yang tidak bisa di-embed (Bandung, DIY, Malang, Batam, dan lainnya): tampil sebagai tombol "Buka portal resmi".
+Hasil sync terakhir: sekitar 230 kamera live di 6 kota (Jakarta 85, Banjarbaru 50, Banda Aceh 41, Kota Magelang 31, Ciamis 19, Pati 4). Jumlahnya berubah tergantung kamera yang menyala dan kecepatan server pemda saat diuji.
 
-ID siaran YouTube bisa berubah saat siaran dimulai ulang. Perbarui sebelum demo:
+Sumber yang tidak dipakai karena servernya mengunci akses ke domain sendiri: Pelindung Bandung, tol Jasa Marga, Banjarmasin, Banyumas. Untuk memakainya perlu izin pemilik kamera (domain Waspada ditambahkan ke daftar yang diizinkan).
+
+Perbarui sebelum demo, lalu commit hasilnya:
 
 ```bash
 cd backend && .venv/bin/python scripts/sync_cctv.py   # tulis ulang cameras.json dan shared/seed.json
 ```
+
+Menambah area tol baru cukup dengan menambah item `areas` (nama kota, bbox `[selatan, barat, utara, timur]`, titik tengah) di `toll_pages`.
 
 Kejadian simulasi tidak pernah ditempel ke CCTV asli, hanya ke kamera demo. Kejadian di CCTV asli hanya datang dari pipeline computer vision (lihat di bawah).
 
@@ -82,7 +88,7 @@ Kejadian simulasi tidak pernah ditempel ke CCTV asli, hanya ke kamera demo. Keja
 | **Frontend** | | |
 | `VITE_GOOGLE_MAPS_API_KEY` | kosong | Kosong = fallback Leaflet + tile gelap |
 | `VITE_GOOGLE_MAP_ID` | kosong | Map ID vector (dark). Kosong = `DEMO_MAP_ID` |
-| `VITE_TILE_URL` | Stadia `alidade_smooth_dark` | Tile untuk fallback Leaflet |
+| `VITE_TILE_URL` | CARTO `dark_all` | Tile untuk fallback Leaflet (gratis tanpa key, jalan di domain publik) |
 | **Backend** | | |
 | `LLM_PROVIDER` | `gemini` | `gemini` atau `anthropic` |
 | `GEMINI_API_KEY` | kosong | Key gratis dari Google AI Studio. Kosong = verifier heuristik berlabel "simulasi" |
@@ -98,13 +104,22 @@ Kejadian simulasi tidak pernah ditempel ke CCTV asli, hanya ke kamera demo. Keja
 | `DISPATCH_CONFIDENCE_MIN` | `0.87` | Ambang auto-dispatch. Di bawahnya wajib divalidasi operator 112 |
 | `DEMO_MODE` | `true` | Seed data + simulator + tombol demo |
 | `ENABLE_BMKG` / `ENABLE_PETABENCANA` / `ENABLE_MAGMA` | `true` | Sumber data nyata gratis tanpa key |
-| `ENABLE_VISION` | `false` | Pipeline CCTV + YOLO |
+| `ENABLE_VISION` | `false` | Pipeline CCTV + YOLO (butuh `requirements-vision.txt`) |
+| `VISION_SAMPLE_S` | `20` | Jeda minimal per kamera (detik) |
+| `VISION_CONCURRENCY` | `3` | Kamera yang diproses bersamaan |
+| `VISION_CITIES` | kosong | Batasi ke kota tertentu, misal `Banjarbaru,Ciamis`. Kosong = semua |
+| `VISION_MAX_CAMERAS` | `0` | Batas jumlah kamera. `0` = tanpa batas |
+| `GENERAL_WEIGHTS` | `yolo11n.pt` | YOLO umum (kendaraan, orang) |
+| `WORLD_WEIGHTS` | `yolov8s-worldv2.pt` | YOLO-World untuk api, asap, banjir. Kosong = mati |
+| `FIRE_WEIGHTS` | `weights/fire_smoke.pt` | Weights kustom api/asap (opsional) |
 
 Jangan commit file `.env`. Sudah masuk `.gitignore`.
 
 ---
 
 ## Arsitektur
+
+### Alur data
 
 ```mermaid
 flowchart LR
@@ -113,13 +128,23 @@ flowchart LR
     FIRMS[NASA FIRMS<br/>titik panas]
     PB[PetaBencana.id<br/>laporan warga]
     MAGMA[MAGMA / PVMBG<br/>gunung api]
-    CCTV[CCTV publik<br/>HLS/RTSP/snapshot]
     WARGA[Form Lapor]
     SIM[Simulator demo]
   end
 
-  CCTV --> CV[OpenCV sampling<br/>+ YOLO]
-  CV --> RULE[Aturan konsistensi<br/>N frame, threshold]
+  subgraph CCTV[CCTV publik resmi]
+    TOL[BPJT<br/>CCTV tol]
+    ATCS[Portal ATCS<br/>HLS]
+    RS[Restreamer pemda<br/>embed + HLS]
+  end
+
+  TOL & ATCS & RS --> SYNC[scripts/sync_cctv.py<br/>uji: menyala, CORS terbuka, cepat]
+  SYNC --> CAMS[(cameras.json<br/>+ seed.json)]
+  CAMS --> HUB
+
+  CAMS --> CV[Worker vision bergiliran<br/>1 frame per kamera, jeda 20 dtk]
+  CV --> YOLO[YOLO umum + YOLO-World<br/>tabrakan, api, asap, banjir]
+  YOLO --> RULE[Aturan konsistensi<br/>3 frame, threshold, cooldown]
   RULE --> BLUR[Blur wajah & plat]
   WARGA --> BLUR
 
@@ -147,26 +172,61 @@ flowchart LR
   HUB <-->|WebSocket /ws<br/>snapshot, incident.upsert,<br/>camera.update| FE[Frontend React<br/>peta + feed + detail]
 ```
 
+### Deploy dan jalur video
+
+```mermaid
+flowchart LR
+  USER[Browser warga<br/>dan operator 112]
+
+  subgraph Vercel
+    RW{Rewrites<br/>vercel.json}
+    FES[Service frontend<br/>Vite build, SPA fallback]
+    BES[Service backend<br/>FastAPI, data di /tmp]
+  end
+
+  GMAPS[Google Maps JS API<br/>atau tile CARTO]
+  STREAM[Server CCTV pemda dan tol<br/>HLS / player embed]
+  VSRV[Server vision terpisah<br/>GPU, ENABLE_VISION=true]
+
+  USER --> RW
+  RW -->|/api/*, /ws| BES
+  RW -->|selain itu| FES
+  USER --> GMAPS
+  USER -->|video langsung dari sumber,<br/>tidak lewat server Waspada| STREAM
+  VSRV -->|ambil 1 frame per giliran| STREAM
+  VSRV -.->|kejadian terdeteksi| BES
+```
+
+- **Video tidak melewati server Waspada.** Browser memutar HLS atau player embed langsung dari server pemda, jadi Vercel tidak menanggung bandwidth video.
+- **Computer vision tidak bisa di Vercel** (terlalu berat untuk serverless). Jalankan backend dengan `ENABLE_VISION=true` di laptop, PC, atau server dengan GPU. Garis putus-putus di diagram adalah rencana production: saat ini server vision menjalankan backend lengkapnya sendiri.
+- **Peta ringan:** saat zoom jauh, kamera digabung per kota (`frontend/src/lib/cameraLayout.ts`). Saat zoom dekat, hanya kamera yang terlihat di layar yang digambar. Marker memakai latar solid tanpa blur.
+
 ### Struktur folder
 
 ```
 waspada/
+  vercel.json          deploy multi-service: service frontend + backend, rewrites /api dan /ws
+  dev.sh               jalankan backend + frontend lokal sekaligus
   frontend/            React + Vite + TS, Tailwind v4, motion, Google Maps / Leaflet
-    src/map/           GoogleMapView, LeafletMapView, penanda (React + motion)
-    src/components/    TopBar, LayerPanel, IncidentFeed, IncidentDetail, DispatchTimeline,
-                       BottomSheet, Toasts, Legend, ReportForm
+    src/map/           GoogleMapView, LeafletMapView, Controller (fokus + zoom), CameraLayer
+    src/map/markers/   IncidentMarker, CameraMarker, CameraClusterMarker (gabungan per kota), PickedMarker
+    src/components/    TopBar, LayerPanel, IncidentPanel, IncidentFeed, IncidentDetail, EvidencePanel,
+                       DispatchTimeline, CameraPlayer, CameraViewer, VideoWall, BottomSheet, Toasts,
+                       Legend, ReportForm
     src/store/         useLiveData: snapshot + WebSocket + fallback offline
-    src/lib/           meta bahaya, sort, seed, mesin lokal (mode offline)
+    src/lib/           meta bahaya, sort, seed, bounds, camera, cameraLayout, mesin lokal (mode offline)
   backend/
     app/sources/       base.py (interface DataSource), bmkg, firms, petabencana, magma, demo_seed
     app/llm/           schema (structured output), context (cuaca, laporan terdekat), verifier, heuristic
     app/dispatch/      base, simulate, webhook, manager (hitung mundur + audit)
-    app/vision/        pipeline (OpenCV + YOLO), privacy (blur)
-    app/simulator.py   kejadian baru tiap 20-30 detik
+    app/vision/        pipeline (worker bergiliran, YOLO + YOLO-World), privacy (blur)
+    app/simulator.py   kejadian baru tiap 20-30 detik (hanya di kamera demo)
     app/pipeline.py    kandidat -> verifikasi -> audit -> dispatch
+    app/config.py      pengaturan dari env; di Vercel data ditulis ke /tmp/waspada
     cameras.json       daftar kamera (dihasilkan scripts/sync_cctv.py + kamera demo)
-    cctv_sources.json  sumber CCTV resmi: channel YouTube, Restreamer, portal
-    scripts/sync_cctv.py  sinkronisasi CCTV live dari sumber resmi
+    cctv_sources.json  sumber CCTV resmi: toll_pages, hls_pages, restreamers, channels, portals
+    geocode_cache.json cache lokasi OpenStreetMap Nominatim untuk kamera tanpa koordinat
+    scripts/sync_cctv.py  ambil, uji, dan tulis CCTV live dari sumber resmi
   shared/seed.json     data demo (dipakai frontend dan backend)
   design-system/       hasil ui-ux-pro-max (MASTER.md)
 ```
@@ -182,8 +242,23 @@ waspada/
 | `POST /api/reports` | Laporan warga (multipart: `type`, `description`, `lat`, `lng`, `photo` opsional) |
 | `GET /api/incidents/{id}/evidence` | Bukti untuk operator: kondisi lokasi (Open-Meteo), kejadian sekitar, kamera, frame deteksi |
 | `GET /api/audit` | Audit log keputusan AI dan operator |
+| `GET /api/frames/{name}` | Frame bukti deteksi CCTV (sudah diblur) |
 | `POST /api/demo/trigger` | Mode demo: buat kejadian kritis CCTV sekarang |
 | `GET /api/health` | Status server |
+
+### Deploy ke Vercel
+
+Repo ini di-deploy sebagai satu project Vercel dengan dua service (`vercel.json`):
+
+| Service | Root | Isi |
+|---|---|---|
+| `frontend` | `frontend/` | Build Vite. Semua path diarahkan ke `index.html` supaya `/operator` tidak 404 |
+| `backend` | `backend/` | FastAPI `app.main:app`. Saat build, `shared/seed.json` disalin ke `backend/shared/` |
+
+Rewrites: `/api/*` dan `/ws` ke backend, sisanya ke frontend. Browser memanggil `/api` di domain yang sama, jadi tidak perlu binding tambahan.
+
+- Set `VITE_GOOGLE_MAPS_API_KEY` di Vercel sebagai env var tipe **Config**, bukan Secret (variabel `VITE_` dibaca saat build, jadi perlu redeploy setelah diubah). Batasi key di Google Cloud Console ke domain production.
+- Di Vercel hanya `/tmp` yang bisa ditulis. Database dan frame bukti disimpan di `/tmp/waspada`, dan state backend hanya bertahan per instance. Untuk production, pindahkan ke database terkelola.
 
 ---
 
@@ -274,10 +349,10 @@ Kamera yang diproses: semua kamera ATCS hasil `scripts/sync_cctv.py` (HLS langsu
 
 ## Catatan teknis
 
-- Peta dikunci di wilayah Indonesia (north 6.8, south -11.8, west 94.0, east 141.8) dengan zoom minimum dinamis.
-- Tile fallback default Stadia `alidade_smooth_dark` gratis tanpa key di localhost. Untuk domain publik, daftar gratis di stadiamaps.com atau ganti `VITE_TILE_URL`. Tile CARTO `dark_all` sekarang meminta API key.
-- Peta dibuat ringan: tile tanpa versi retina, zoom maksimal 12 (level kota), tile dimuat saat peta diam, poligon dan rute digambar di canvas.
+- Peta dikunci di wilayah Indonesia (north 6.8, south -11.8, west 94.0, east 141.8). Zoom minimum dihitung dari ukuran layar supaya seluruh Indonesia muat, zoom maksimum 20 (level jalan).
+- Klik pin memakai zoom tujuan sebagai zoom minimum: kalau peta sudah lebih dekat, zoom tidak diubah, hanya digeser ke pin.
+- Tile fallback Leaflet default CARTO `dark_all` (gratis tanpa key, jalan di domain publik). Di atas zoom 18 tile diperbesar dari zoom 18. Stadia tidak dipakai karena di domain yang tidak terdaftar hasilnya 401.
+- Peta dibuat ringan: kamera digabung per kota saat zoom jauh, hanya kamera di layar yang digambar saat zoom dekat, marker tanpa `backdrop-filter`, callback marker stabil (`memo`) supaya tidak render ulang tiap update realtime. Video wall berlatar solid dan memutar 6 video per halaman.
 - Kejadian simulasi selesai otomatis setelah 8 menit dan maksimal 12 aktif sekaligus, supaya peta tidak menumpuk saat demo berjalan lama. Pulse hanya untuk kejadian kritis yang belum ditangani.
 - Semua animasi memakai `motion` (`motion/react`) dengan `MotionConfig reducedMotion="user"`; pulse kritis dimatikan saat reduced motion.
 - Design system: `design-system/waspada-nusantara/MASTER.md` (ui-ux-pro-max, density 8, motion 5).
-# waspada-indonesia
