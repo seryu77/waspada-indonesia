@@ -18,9 +18,28 @@ function Controller({ focus }: Pick<MapProps, 'focus'>) {
   const reduce = useReducedMotion()
   useEffect(() => {
     if (!map || !focus) return
-    map.panTo({ lat: focus.lat, lng: focus.lng })
-    if (reduce) map.setZoom(focus.zoom)
-    else window.setTimeout(() => map.setZoom(focus.zoom), 300)
+    const center = { lat: focus.lat, lng: focus.lng }
+    if (reduce) {
+      map.moveCamera({ center, zoom: focus.zoom })
+      return
+    }
+    // Zoom baru dijalankan setelah geser selesai. Kalau zoom memotong animasi geser,
+    // peta ter-zoom di titik tengah perjalanan, bukan di pinpoint yang dipilih.
+    let done = false
+    const go = () => {
+      if (done) return
+      done = true
+      map.moveCamera({ center, zoom: focus.zoom })
+    }
+    map.panTo(center)
+    const idle = google.maps.event.addListenerOnce(map, 'idle', go)
+    // Cadangan: kalau peta sudah di titik itu, panTo tidak bergerak dan 'idle' bisa tidak terpicu
+    const t = window.setTimeout(go, 1200)
+    return () => {
+      done = true
+      idle.remove()
+      window.clearTimeout(t)
+    }
   }, [map, focus, reduce])
   return null
 }
