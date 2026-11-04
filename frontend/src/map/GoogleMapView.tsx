@@ -99,6 +99,8 @@ export default function GoogleMapView(p: MapProps) {
             key={i.id}
             position={{ lat: i.lat, lng: i.lng }}
             zIndex={SEVERITY[effectiveSeverity(i)].rank * 10 + (p.selectedId === i.id ? 100 : 0)}
+            // Tanpa ini library mematikan pointer-events konten marker, jadi tombol di dalamnya tidak bisa diklik
+            clickable
             anchorLeft="-50%"
             anchorTop="-50%"
           >
