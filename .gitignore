@@ -10,3 +10,4 @@ backend/app/vision/frames/
 *.pt
 *.onnx
 graphify-out/
+backend/shared/

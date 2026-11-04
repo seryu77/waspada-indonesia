@@ -33,6 +33,7 @@ _db: aiosqlite.Connection | None = None
 
 async def init() -> None:
     global _db
+    settings.db_path.parent.mkdir(parents=True, exist_ok=True)
     _db = await aiosqlite.connect(settings.db_path)
     await _db.executescript(SCHEMA)
     await _db.commit()

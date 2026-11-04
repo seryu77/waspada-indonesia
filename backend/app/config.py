@@ -1,9 +1,22 @@
+import os
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 ROOT_DIR = BASE_DIR.parent
+
+# Di Vercel, folder kode read-only; hanya /tmp yang bisa ditulis (dan tidak permanen)
+ON_VERCEL = bool(os.environ.get("VERCEL"))
+DATA_DIR = Path("/tmp/waspada") if ON_VERCEL else BASE_DIR
+
+
+def _seed_default() -> Path:
+    # Lokal: ../shared/seed.json. Di Vercel: disalin ke backend/shared/ saat build
+    for p in (ROOT_DIR / "shared" / "seed.json", BASE_DIR / "shared" / "seed.json"):
+        if p.exists():
+            return p
+    return ROOT_DIR / "shared" / "seed.json"
 
 
 class Settings(BaseSettings):
@@ -42,10 +55,10 @@ class Settings(BaseSettings):
     general_weights: str = "yolo11n.pt"
 
     public_base_url: str = "http://localhost:8000"
-    db_path: Path = BASE_DIR / "waspada.db"
-    seed_path: Path = ROOT_DIR / "shared" / "seed.json"
+    db_path: Path = DATA_DIR / "waspada.db"
+    seed_path: Path = _seed_default()
     cameras_path: Path = BASE_DIR / "cameras.json"
-    frames_dir: Path = BASE_DIR / "app" / "vision" / "frames"
+    frames_dir: Path = (DATA_DIR / "frames") if ON_VERCEL else BASE_DIR / "app" / "vision" / "frames"
 
     @property
     def llm_enabled(self) -> bool:
