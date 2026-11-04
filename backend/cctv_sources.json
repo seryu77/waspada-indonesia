@@ -1,0 +1,539 @@
+{
+  "_note": "Sumber CCTV resmi yang disiarkan instansi untuk publik. Jalankan: python scripts/sync_cctv.py. channels: YouTube resmi ('only' = hanya judul yang mengandung teks ini, 'points' = koordinat pasti untuk judul yang mengandung kunci). restreamers: server datarhei Restreamer pemda dengan kode embed resmi (oEmbed). portals: portal CCTV resmi yang tidak bisa di-embed, tampil sebagai tombol 'Buka portal resmi'.",
+  "enable_youtube": false,
+  "enable_portals": false,
+  "exclude_title": [
+    "MPL",
+    "LIVE STREAMING MELBOURNE",
+    "Webinar",
+    "Diseminasi",
+    "JITV NONSTOP",
+    "WOW INDAH"
+  ],
+  "channels": [
+    {
+      "handle": "@CCTVDISHUBKOTAPONTIANAK",
+      "source": "Dishub Kota Pontianak",
+      "region": "Kota Pontianak, Kalimantan Barat",
+      "city": "Pontianak",
+      "center": {
+        "lat": -0.0263,
+        "lng": 109.3425
+      }
+    },
+    {
+      "handle": "@CCTVWilayah2",
+      "source": "Dishub Kota Pontianak (Wilayah II)",
+      "region": "Kota Pontianak, Kalimantan Barat",
+      "city": "Pontianak",
+      "center": {
+        "lat": -0.0263,
+        "lng": 109.3425
+      }
+    },
+    {
+      "handle": "@DinasPerhubunganKotaPontianak",
+      "source": "Dishub Kota Pontianak (Wilayah III)",
+      "region": "Kota Pontianak, Kalimantan Barat",
+      "city": "Pontianak",
+      "center": {
+        "lat": -0.0263,
+        "lng": 109.3425
+      }
+    },
+    {
+      "handle": "@cctvdishubkotapontianak-i9u",
+      "source": "Dishub Kota Pontianak (Wilayah IV)",
+      "region": "Kota Pontianak, Kalimantan Barat",
+      "city": "Pontianak",
+      "center": {
+        "lat": -0.0263,
+        "lng": 109.3425
+      }
+    },
+    {
+      "handle": "@PjDishubptk",
+      "source": "Dishub Kota Pontianak (Wilayah V)",
+      "region": "Kota Pontianak, Kalimantan Barat",
+      "city": "Pontianak",
+      "center": {
+        "lat": -0.0263,
+        "lng": 109.3425
+      }
+    },
+    {
+      "handle": "@CCTVPemkotYogyakarta",
+      "source": "Pemerintah Kota Yogyakarta",
+      "region": "Kota Yogyakarta",
+      "city": "Yogyakarta",
+      "center": {
+        "lat": -7.7956,
+        "lng": 110.3695
+      }
+    },
+    {
+      "handle": "@JITVPemdaDIY",
+      "source": "JITV Pemda DIY",
+      "region": "Daerah Istimewa Yogyakarta",
+      "city": "Yogyakarta",
+      "center": {
+        "lat": -7.7956,
+        "lng": 110.3695
+      },
+      "only": [
+        "CCTV JOGJA LIVE 24 JAM - "
+      ],
+      "points": {
+        "GUNUNG MERAPI": {
+          "lat": -7.5407,
+          "lng": 110.4457
+        },
+        "TUGU": {
+          "lat": -7.7829,
+          "lng": 110.3671
+        },
+        "NOL KM": {
+          "lat": -7.8013,
+          "lng": 110.3647
+        }
+      }
+    },
+    {
+      "handle": "@ATCSDishubKabMagelang",
+      "source": "ATCS Dishub Kabupaten Magelang",
+      "region": "Kabupaten Magelang, Jawa Tengah",
+      "city": "Kab. Magelang",
+      "center": {
+        "lat": -7.5917,
+        "lng": 110.2236
+      }
+    },
+    {
+      "handle": "@dishubkabmagelang",
+      "source": "Dishub Kabupaten Magelang",
+      "region": "Kabupaten Magelang, Jawa Tengah",
+      "city": "Kab. Magelang",
+      "center": {
+        "lat": -7.5917,
+        "lng": 110.2236
+      }
+    },
+    {
+      "handle": "@CCTVSAMARINDA",
+      "source": "Diskominfo Kota Samarinda",
+      "region": "Kota Samarinda, Kalimantan Timur",
+      "city": "Samarinda",
+      "center": {
+        "lat": -0.5022,
+        "lng": 117.1536
+      }
+    },
+    {
+      "handle": "@KominfoGunungkidul",
+      "source": "Kominfo Kabupaten Gunungkidul",
+      "region": "Kabupaten Gunungkidul, Yogyakarta",
+      "city": "Gunungkidul",
+      "center": {
+        "lat": -7.9655,
+        "lng": 110.6014
+      }
+    },
+    {
+      "handle": "@CCTVDishubDemak-002",
+      "source": "Dishub Kabupaten Demak",
+      "region": "Kabupaten Demak, Jawa Tengah",
+      "city": "Demak",
+      "center": {
+        "lat": -6.8949,
+        "lng": 110.6377
+      }
+    },
+    {
+      "handle": "@cctvdishubdemak",
+      "source": "Dishub Kabupaten Demak",
+      "region": "Kabupaten Demak, Jawa Tengah",
+      "city": "Demak",
+      "center": {
+        "lat": -6.8949,
+        "lng": 110.6377
+      }
+    },
+    {
+      "handle": "@cctvpacitankab",
+      "source": "Pemkab Pacitan",
+      "region": "Kabupaten Pacitan, Jawa Timur",
+      "city": "Pacitan",
+      "center": {
+        "lat": -8.1941,
+        "lng": 111.1053
+      }
+    },
+    {
+      "handle": "@cctvpemkabbantul",
+      "source": "Pemkab Bantul",
+      "region": "Kabupaten Bantul, Yogyakarta",
+      "city": "Bantul",
+      "center": {
+        "lat": -7.8881,
+        "lng": 110.3289
+      }
+    },
+    {
+      "handle": "@dinkominfotemanggung",
+      "source": "Dinkominfo Kabupaten Temanggung",
+      "region": "Kabupaten Temanggung, Jawa Tengah",
+      "city": "Temanggung",
+      "center": {
+        "lat": -7.3155,
+        "lng": 110.1763
+      }
+    },
+    {
+      "handle": "@CCTv.Bengkalis",
+      "source": "Pemkab Bengkalis",
+      "region": "Kabupaten Bengkalis, Riau",
+      "city": "Bengkalis",
+      "center": {
+        "lat": 1.4664,
+        "lng": 102.1081
+      },
+      "points": {
+        "Sei Selari": {
+          "lat": 1.3576,
+          "lng": 102.1597
+        },
+        "Air Putih": {
+          "lat": 1.4785,
+          "lng": 102.1105
+        }
+      }
+    },
+    {
+      "handle": "@KominfoBelitungTV",
+      "source": "Kominfo Kabupaten Belitung",
+      "region": "Kabupaten Belitung, Bangka Belitung",
+      "city": "Belitung",
+      "center": {
+        "lat": -2.7414,
+        "lng": 107.6531
+      }
+    },
+    {
+      "handle": "@cctvdesawanasaraya",
+      "source": "Pemerintah Desa Wanasaraya",
+      "region": "Desa Wanasaraya, Kuningan, Jawa Barat",
+      "city": "Kuningan",
+      "center": {
+        "lat": -6.931,
+        "lng": 108.6385
+      }
+    },
+    {
+      "handle": "@lalinmks",
+      "source": "Lalu Lintas Kota Makassar",
+      "region": "Kota Makassar, Sulawesi Selatan",
+      "city": "Makassar",
+      "center": {
+        "lat": -5.1477,
+        "lng": 119.4327
+      }
+    },
+    {
+      "handle": "@BadanGeologiBG",
+      "source": "Badan Geologi (PVMBG)",
+      "region": "Indonesia",
+      "city": "Gunung api",
+      "center": {
+        "lat": -7.5407,
+        "lng": 110.4457
+      },
+      "points": {
+        "Sinabung": {
+          "lat": 3.17,
+          "lng": 98.392
+        },
+        "Tangkuban Parahu": {
+          "lat": -6.77,
+          "lng": 107.6
+        },
+        "Merapi": {
+          "lat": -7.5407,
+          "lng": 110.4457
+        },
+        "Bromo": {
+          "lat": -7.942,
+          "lng": 112.953
+        }
+      }
+    },
+    {
+      "handle": "@bpbdsleman",
+      "source": "BPBD Kabupaten Sleman",
+      "region": "Kabupaten Sleman, Yogyakarta",
+      "city": "Sleman (Merapi)",
+      "center": {
+        "lat": -7.62,
+        "lng": 110.43
+      },
+      "points": {
+        "TUNGGULARUM": {
+          "lat": -7.6047,
+          "lng": 110.3936
+        },
+        "KALITENGAH LOR": {
+          "lat": -7.5869,
+          "lng": 110.4561
+        },
+        "BUNKER KALIURANG": {
+          "lat": -7.5966,
+          "lng": 110.4253
+        },
+        "NGRANGKAH": {
+          "lat": -7.5783,
+          "lng": 110.4614
+        },
+        "NGANDONG": {
+          "lat": -7.597,
+          "lng": 110.4446
+        },
+        "BUKIT TURGO": {
+          "lat": -7.5891,
+          "lng": 110.4065
+        }
+      }
+    },
+    {
+      "handle": "@IndukFrekom86",
+      "source": "Induk Frekom 86 (komunitas radio Merapi)",
+      "region": "Gunung Merapi",
+      "city": "Sleman (Merapi)",
+      "center": {
+        "lat": -7.5407,
+        "lng": 110.4457
+      },
+      "only": [
+        "Merapi"
+      ],
+      "points": {
+        "Merapi": {
+          "lat": -7.5407,
+          "lng": 110.4457
+        }
+      }
+    }
+  ],
+  "restreamers": [
+    {
+      "base": "https://restreamer.magelangkota.go.id",
+      "source": "Pemerintah Kota Magelang",
+      "region": "Kota Magelang, Jawa Tengah",
+      "city": "Kota Magelang",
+      "center": {
+        "lat": -7.4797,
+        "lng": 110.2177
+      }
+    },
+    {
+      "base": "https://api.bandaacehkota.go.id/cctv",
+      "page": "https://cctv.bandaacehkota.go.id",
+      "source": "Diskominfotik Kota Banda Aceh",
+      "region": "Banda Aceh, Aceh",
+      "city": "Banda Aceh",
+      "center": {
+        "lat": 5.5483,
+        "lng": 95.3238
+      }
+    },
+    {
+      "base": "https://streaming.patikab.go.id",
+      "page": "https://cctv.patikab.go.id",
+      "source": "Pemerintah Kabupaten Pati",
+      "region": "Pati, Jawa Tengah",
+      "city": "Pati",
+      "center": {
+        "lat": -6.7559,
+        "lng": 111.038
+      }
+    }
+  ],
+  "portals": [
+    {
+      "city": "Jakarta",
+      "url": "https://smartcity.jakarta.go.id/id/blog/pantau-lalu-lintas-dan-keamanan-dengan-cctv-jakarta/",
+      "source": "Jakarta Smart City, Pemprov DKI Jakarta (CCTV di aplikasi JAKI)",
+      "region": "DKI Jakarta",
+      "center": {
+        "lat": -6.1754,
+        "lng": 106.8272
+      }
+    },
+    {
+      "city": "Bandung",
+      "url": "https://pelindung.bandung.go.id",
+      "source": "Pelindung, Pemerintah Kota Bandung",
+      "region": "Bandung",
+      "center": {
+        "lat": -6.9175,
+        "lng": 107.6191
+      }
+    },
+    {
+      "city": "DI Yogyakarta",
+      "url": "https://cctv.jogjaprov.go.id",
+      "source": "CCTV Jogja Istimewa, Pemda DIY",
+      "region": "DI Yogyakarta",
+      "center": {
+        "lat": -7.803,
+        "lng": 110.375
+      }
+    },
+    {
+      "city": "Kota Malang",
+      "url": "https://cctv.malangkota.go.id",
+      "source": "Diskominfo Kota Malang",
+      "region": "Kota Malang",
+      "center": {
+        "lat": -7.9666,
+        "lng": 112.6326
+      }
+    },
+    {
+      "city": "Kebumen",
+      "url": "https://cctv.kebumenkab.go.id",
+      "source": "Pemerintah Kabupaten Kebumen",
+      "region": "Kebumen",
+      "center": {
+        "lat": -7.6681,
+        "lng": 109.6525
+      }
+    },
+    {
+      "city": "Batam",
+      "url": "https://matanya.batam.go.id",
+      "source": "Matanya Batam, Diskominfo Kota Batam",
+      "region": "Batam",
+      "center": {
+        "lat": 1.0456,
+        "lng": 104.0305
+      }
+    },
+    {
+      "city": "Kab. Mojokerto",
+      "url": "https://dishubcctv.mojokertokab.go.id",
+      "source": "ATCS Dishub Kabupaten Mojokerto",
+      "region": "Kab. Mojokerto",
+      "center": {
+        "lat": -7.5246,
+        "lng": 112.5559
+      }
+    },
+    {
+      "city": "Sukoharjo",
+      "url": "https://cctv-dishub.sukoharjokab.go.id",
+      "source": "Dishub Kabupaten Sukoharjo",
+      "region": "Sukoharjo",
+      "center": {
+        "lat": -7.6806,
+        "lng": 110.8417
+      }
+    },
+    {
+      "city": "Kab. Magelang",
+      "url": "https://cctv.dishub.magelangkab.go.id",
+      "source": "Dishub Kabupaten Magelang",
+      "region": "Kab. Magelang",
+      "center": {
+        "lat": -7.58,
+        "lng": 110.21
+      }
+    },
+    {
+      "city": "Banjarmasin",
+      "url": "https://cctv.banjarmasinkota.go.id",
+      "source": "Diskominfotik Kota Banjarmasin",
+      "region": "Banjarmasin",
+      "center": {
+        "lat": -3.3194,
+        "lng": 114.5908
+      }
+    },
+    {
+      "city": "Gresik",
+      "url": "https://cctvkanjeng.gresikkab.go.id",
+      "source": "Diskominfo Kabupaten Gresik",
+      "region": "Gresik",
+      "center": {
+        "lat": -7.1566,
+        "lng": 112.6555
+      }
+    }
+  ],
+  "hls_pages": [
+    {
+      "page": "https://cctv.pekanbaru.go.id",
+      "source": "Dishub Kota Pekanbaru",
+      "region": "Pekanbaru, Riau",
+      "city": "Pekanbaru",
+      "center": {
+        "lat": 0.5071,
+        "lng": 101.4478
+      }
+    },
+    {
+      "page": "https://atcs.ciamiskab.go.id",
+      "source": "ATCS Dishub Kabupaten Ciamis",
+      "region": "Ciamis, Jawa Barat",
+      "city": "Ciamis",
+      "center": {
+        "lat": -7.3257,
+        "lng": 108.3534
+      }
+    },
+    {
+      "page": "https://cctv.banjarbarukota.go.id",
+      "source": "Pemerintah Kota Banjarbaru",
+      "region": "Banjarbaru, Kalimantan Selatan",
+      "city": "Banjarbaru",
+      "center": {
+        "lat": -3.4425,
+        "lng": 114.8325
+      }
+    }
+  ],
+  "toll_pages": [
+    {
+      "page": "https://bpjt.pu.go.id/cctv",
+      "source": "BPJT Kementerian PU",
+      "areas": [
+        {
+          "city": "Jakarta",
+          "region": "DKI Jakarta",
+          "bbox": [
+            -6.375,
+            106.68,
+            -6.08,
+            106.98
+          ],
+          "center": {
+            "lat": -6.2088,
+            "lng": 106.8456
+          }
+        },
+        {
+          "city": "Bandung",
+          "region": "Bandung, Jawa Barat",
+          "bbox": [
+            -7.1,
+            107.4,
+            -6.78,
+            107.85
+          ],
+          "center": {
+            "lat": -6.9175,
+            "lng": 107.6191
+          }
+        }
+      ]
+    }
+  ]
+}

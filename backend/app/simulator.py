@@ -81,7 +81,8 @@ async def run_simulator(templates: list[dict]) -> None:
 
 
 async def _bump_camera(inc: Incident) -> None:
-    online = [c for c in hub.cameras.values() if c.status == "online"]
+    # Kejadian simulasi hanya boleh ditempel ke kamera demo, tidak pernah ke CCTV publik asli
+    online = [c for c in hub.cameras.values() if c.status == "online" and c.stream_type == "none"]
     if not online:
         return
     cam = min(online, key=lambda c: haversine_km(inc.lat, inc.lng, c.lat, c.lng))

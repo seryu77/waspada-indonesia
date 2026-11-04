@@ -1,4 +1,4 @@
-import { useEffect, useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import L from 'leaflet'
 import { Circle, MapContainer, Marker, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
@@ -9,6 +9,9 @@ import { ROUTES, SEVERITY, ZONES } from '../lib/hazards'
 import { effectiveSeverity } from '../lib/sort'
 import { IncidentMarker } from './markers/IncidentMarker'
 import { CameraMarker } from './markers/CameraMarker'
+import { CameraClusterMarker } from './markers/CameraClusterMarker'
+import { CLUSTER_ZOOM_TO, layoutCameras, type MapViewport } from '../lib/cameraLayout'
+import { hasStream } from '../lib/camera'
 import { PickedMarker } from './markers/PickedMarker'
 import { routeText, zoneText } from './overlayText'
 
@@ -19,8 +22,8 @@ const TILE_URL =
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
-// Detail secukupnya: level kota sudah cukup untuk peta peringatan, tile lebih sedikit dan ringan
-const MAX_ZOOM = 12
+// Sampai level jalan (tile CARTO tersedia hingga zoom 20)
+const MAX_ZOOM = 20
 
 const BOUNDS = L.latLngBounds([INDONESIA_BOUNDS.south, INDONESIA_BOUNDS.west], [INDONESIA_BOUNDS.north, INDONESIA_BOUNDS.east])
 
@@ -66,8 +69,11 @@ function Controller({ focus, pickMode, onPick }: Pick<MapProps, 'focus' | 'pickM
 
   useEffect(() => {
     if (!focus) return
-    if (reduce) map.setView([focus.lat, focus.lng], focus.zoom)
-    else map.flyTo([focus.lat, focus.lng], focus.zoom, { duration: 1.1 })
+    // focus.zoom adalah zoom minimum: kalau pengguna sudah zoom lebih dekat, jangan ditarik mundur
+    const zoom = Math.max(map.getZoom(), focus.zoom)
+    if (reduce) map.setView([focus.lat, focus.lng], zoom)
+    else if (zoom === map.getZoom()) map.panTo([focus.lat, focus.lng], { duration: 0.6 })
+    else map.flyTo([focus.lat, focus.lng], zoom, { duration: 1.1 })
   }, [focus, map, reduce])
 
   useEffect(() => {
@@ -80,6 +86,32 @@ function Controller({ focus, pickMode, onPick }: Pick<MapProps, 'focus' | 'pickM
     },
   })
   return null
+}
+
+/** Kamera digabung per kota saat zoom jauh, dan hanya yang terlihat di layar saat zoom dekat. */
+function CameraLayer({ cameras, selectedCameraId, onSelectCamera }: Pick<MapProps, 'cameras' | 'selectedCameraId' | 'onSelectCamera'>) {
+  const map = useMap()
+  const read = (): MapViewport => {
+    const b = map.getBounds()
+    return { zoom: map.getZoom(), bounds: { north: b.getNorth(), south: b.getSouth(), east: b.getEast(), west: b.getWest() } }
+  }
+  const [view, setView] = useState<MapViewport>(read)
+  useMapEvents({ moveend: () => setView(read()) })
+  const { clusters, singles } = useMemo(() => layoutCameras(cameras, view, selectedCameraId, hasStream), [cameras, view, selectedCameraId])
+  return (
+    <>
+      {clusters.map((g) => (
+        <ReactMarker key={`g-${g.key}`} lat={g.lat} lng={g.lng} z={-50}>
+          <CameraClusterMarker cluster={g} onZoom={(c) => map.flyTo([c.lat, c.lng], CLUSTER_ZOOM_TO, { duration: 0.8 })} />
+        </ReactMarker>
+      ))}
+      {singles.map((c) => (
+        <ReactMarker key={c.id} lat={c.lat} lng={c.lng} z={-100}>
+          <CameraMarker camera={c} selected={selectedCameraId === c.id} onSelect={onSelectCamera} />
+        </ReactMarker>
+      ))}
+    </>
+  )
 }
 
 export default function LeafletMapView(p: MapProps) {
@@ -101,6 +133,8 @@ export default function LeafletMapView(p: MapProps) {
         url={TILE_URL}
         attribution={TILE_ATTRIBUTION}
         maxZoom={MAX_ZOOM}
+        // Di atas 18 tile diperbesar dari zoom 18, jadi tidak muncul kotak kosong
+        maxNativeZoom={18}
         detectRetina={false}
         updateWhenIdle
         updateWhenZooming={false}
@@ -139,11 +173,7 @@ export default function LeafletMapView(p: MapProps) {
         </Polyline>
       ))}
 
-      {p.cameras.map((c) => (
-        <ReactMarker key={c.id} lat={c.lat} lng={c.lng} z={-100}>
-          <CameraMarker camera={c} />
-        </ReactMarker>
-      ))}
+      <CameraLayer cameras={p.cameras} selectedCameraId={p.selectedCameraId} onSelectCamera={p.onSelectCamera} />
 
       {p.incidents.map((i) => (
         <ReactMarker key={i.id} lat={i.lat} lng={i.lng} z={SEVERITY[effectiveSeverity(i)].rank * 100 + (p.selectedId === i.id ? 1000 : 0)}>

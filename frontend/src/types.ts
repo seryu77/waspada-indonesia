@@ -97,7 +97,15 @@ export interface Camera {
   status: 'online' | 'offline'
   detections_today: number
   stream_url: string
-  stream_type: 'hls' | 'rtsp' | 'snapshot'
+  /**
+   * youtube/embed: siaran publik resmi yang boleh di-embed. portal: link ke portal CCTV resmi
+   * (tidak bisa diputar di sini). none: kamera demo tanpa stream.
+   */
+  stream_type: 'hls' | 'rtsp' | 'snapshot' | 'youtube' | 'embed' | 'portal' | 'none'
+  /** Pemilik siaran, ditampilkan sebagai atribusi */
+  source?: string
+  /** Koordinat tidak ditemukan, titik diletakkan di sekitar pusat wilayah */
+  approx_location?: boolean
   last_frame_at?: string
 }
 

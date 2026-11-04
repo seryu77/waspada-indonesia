@@ -51,6 +51,27 @@ Vite mem-proxy `/api` dan `/ws` ke `http://127.0.0.1:8000`. Kalau backend mati, 
 5. Kepastian AI **87% atau lebih**: **hitung mundur 112** otomatis, operator bisa **Kirim sekarang** atau **Batalkan**, tanpa aksi terkirim saat hitung mundur habis. **Di bawah 87%**: status **Butuh validasi**, tidak ada timer dan tidak pernah terkirim sendiri, operator harus **Validasi & kirim** atau **Tolak** (contoh: Tol Palindra, 82%). Semua keputusan tercatat di `GET /api/audit`.
    Di atas tombol validasi ada panel **Bukti pendukung**: indikator otomatis (mendukung atau melemahkan), kondisi lokasi (suhu, kelembapan, angin, hujan sekarang dan 24 jam, kualitas udara AQI dan PM2.5, ketinggian), siaran langsung CCTV pendeteksi atau terdekat, rekaman frame saat deteksi, dan kejadian lain dalam 15 km.
 6. Klik **Lapor** untuk mengirim laporan warga (jenis, deskripsi, lokasi dari peta atau GPS, foto opsional).
+7. Klik marker **LIVE** di peta untuk menonton CCTV resmi secara langsung. Di halaman operator, tombol **Video wall** menampilkan grid semua CCTV live per kota, plus link ke portal CCTV resmi daerah lain.
+
+### CCTV live dari sumber resmi
+
+Kamera live diambil hanya dari siaran yang dibuka instansi untuk publik, didaftarkan di `backend/cctv_sources.json`:
+
+YouTube dan portal link saat ini dimatikan (`enable_youtube`, `enable_portals` di config) karena tidak bisa diproses computer vision.
+
+- **YouTube resmi** pemda, dinas, BPBD, dan Badan Geologi (Dishub Pontianak, Pemkot Yogyakarta, Gunungkidul, Samarinda, Magelang, Demak, Bantul, BPBD Sleman, gunung api PVMBG, dan lainnya).
+- **Embed resmi** dari server Restreamer pemda (Kota Magelang, Banda Aceh, Pati) yang menyediakan kode embed lewat oEmbed. Daftar kamera dan koordinatnya dibaca dari portal resmi masing-masing.
+- **CCTV jalan tol** dari daftar resmi BPJT Kementerian PU (`bpjt.pu.go.id/cctv`), difilter per area (saat ini Jakarta). Tol yang mengunci streamnya ke domain sendiri (misal Jasa Marga) otomatis tidak diambil.
+- **Stream HLS resmi** dari portal ATCS yang mencantumkan alamat video di halamannya (Banjarbaru, Ciamis, Pekanbaru). Hanya kamera yang servernya mengizinkan diputar dari situs lain (CORS terbuka, tanpa token atau login), sedang menyala, dan cukup cepat ditonton yang diambil. Portal yang mengunci streamnya (misal Banjarmasin, Banyumas) tidak dipakai.
+- **Portal resmi** yang tidak bisa di-embed (Bandung, DIY, Malang, Batam, dan lainnya): tampil sebagai tombol "Buka portal resmi".
+
+ID siaran YouTube bisa berubah saat siaran dimulai ulang. Perbarui sebelum demo:
+
+```bash
+cd backend && .venv/bin/python scripts/sync_cctv.py   # tulis ulang cameras.json dan shared/seed.json
+```
+
+Kejadian simulasi tidak pernah ditempel ke CCTV asli, hanya ke kamera demo. Kejadian di CCTV asli hanya datang dari pipeline computer vision (lihat di bawah).
 
 ---
 
@@ -143,7 +164,9 @@ waspada/
     app/vision/        pipeline (OpenCV + YOLO), privacy (blur)
     app/simulator.py   kejadian baru tiap 20-30 detik
     app/pipeline.py    kandidat -> verifikasi -> audit -> dispatch
-    cameras.json       konfigurasi kamera
+    cameras.json       daftar kamera (dihasilkan scripts/sync_cctv.py + kamera demo)
+    cctv_sources.json  sumber CCTV resmi: channel YouTube, Restreamer, portal
+    scripts/sync_cctv.py  sinkronisasi CCTV live dari sumber resmi
   shared/seed.json     data demo (dipakai frontend dan backend)
   design-system/       hasil ui-ux-pro-max (MASTER.md)
 ```
@@ -206,15 +229,18 @@ Tombol **Hubungi 112** di top bar adalah tautan `tel:112` untuk warga.
 
 ## Pipeline CCTV + computer vision
 
-Aktifkan dengan `ENABLE_VISION=true` dan `pip install -r requirements-vision.txt`. Paket ini ikut memasang PyTorch (beberapa GB); disarankan Python 3.11 atau 3.12 dan koneksi stabil.
+Aktifkan dengan `ENABLE_VISION=true` dan `pip install -r requirements-vision.txt`. Paket ini ikut memasang PyTorch (beberapa GB). YOLO-World akan memasang paket `clip` dan mengunduh weights-nya sendiri saat pertama jalan. Pipeline ini butuh mesin dengan CPU/GPU kuat, jadi jalankan backend di laptop atau server sendiri, bukan di Vercel.
 
-- 1 frame tiap `VISION_SAMPLE_S` detik per kamera (bukan setiap frame).
-- YOLO: api/asap (weights khusus di `FIRE_WEIGHTS`, misalnya hasil training dataset D-Fire), kendaraan bertabrakan (kotak kendaraan saling tumpang tindih), kerumunan (jumlah orang), dan kelas kustom lain (`flood`, `fight`) bila weights-nya punya.
-- Aturan sebelum LLM: deteksi harus muncul di 3 frame berturut-turut dengan confidence >= 0,5, plus cooldown 10 menit per kamera.
-- Kamera dikonfigurasi di `backend/cameras.json` (`id`, `name`, `city`, `lat`, `lng`, `stream_url`, `stream_type`). URL di repo adalah placeholder.
-- **Izin akses CCTV pemda/ATCS/Jasa Marga wajib dicek** sebelum menyambungkan stream nyata.
+Kamera yang diproses: semua kamera ATCS hasil `scripts/sync_cctv.py` (HLS langsung, atau HLS di balik player embed lewat `vision_url`) plus kamera yang ditambahkan manual. YouTube tidak pernah diproses (dilarang ToS).
 
-Weights fire/smoke tidak dibundel. Latih YOLO di dataset D-Fire (fire + smoke) lalu simpan di `backend/weights/fire_smoke.pt`.
+- **Ringan untuk server pemda:** tiap giliran hanya 1 frame per kamera, koneksi langsung ditutup. `VISION_CONCURRENCY` worker (default 3) mengunjungi kamera bergiliran, dengan jeda minimal `VISION_SAMPLE_S` detik (default 20) per kamera.
+- **Batasi beban laptop:** `VISION_CITIES=Banjarbaru,Ciamis` atau `VISION_MAX_CAMERAS=20`.
+- **Model:**
+  - YOLO umum (`GENERAL_WEIGHTS`): kendaraan saling tumpang tindih = dugaan tabrakan, banyak orang = kerumunan.
+  - YOLO-World (`WORLD_WEIGHTS`, prompt teks): api, asap, banjir/genangan, kendaraan terguling. Tidak perlu training.
+  - Weights kustom opsional (`FIRE_WEIGHTS`), misalnya hasil training D-Fire di `backend/weights/fire_smoke.pt`, untuk api/asap yang lebih akurat.
+- **Aturan sebelum LLM:** deteksi harus muncul di 3 frame berturut-turut (confidence >= 0,5, atau >= 0,3 untuk api/banjir dari YOLO-World), plus cooldown 10 menit per kamera. Lalu diverifikasi LLM dua tahap dan operator.
+- Untuk produksi, ajukan izin tertulis ke Dishub/Diskominfo pemilik kamera.
 
 ### Privasi
 

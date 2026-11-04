@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { CircleMinus, CirclePlus, Info, Loader, Pause, Play, RefreshCw, Video, VideoOff } from 'lucide-react'
-import type { Camera, Evidence, Incident, Signal, Snapshot } from '../types'
+import { CircleMinus, CirclePlus, Info, Pause, Play, RefreshCw, Video } from 'lucide-react'
+import type { Evidence, Incident, Signal, Snapshot } from '../types'
 import { HAZARDS, SEVERITY } from '../lib/hazards'
 import { aqiLevel, compass, fetchEvidence, signals } from '../lib/evidence'
 import { clockWIB, timeAgo } from '../lib/format'
+import { CameraPlayer } from './CameraPlayer'
 
 interface Props {
   incident: Incident
@@ -68,91 +69,6 @@ function Signals({ list }: { list: Signal[] }) {
           )
         })}
     </ul>
-  )
-}
-
-/** Stream CCTV langsung: HLS (hls.js atau native Safari), snapshot (refresh berkala), RTSP tidak bisa di browser. */
-function CameraPlayer({ camera }: { camera: Camera }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const [state, setState] = useState<'loading' | 'playing' | 'error'>('loading')
-  const [tick, setTick] = useState(0)
-
-  // Komponen diberi key per kamera oleh induknya, jadi state awal selalu 'loading'
-  useEffect(() => {
-    if (camera.stream_type === 'snapshot') {
-      const t = window.setInterval(() => setTick((n) => n + 1), 5000)
-      return () => window.clearInterval(t)
-    }
-    if (camera.stream_type !== 'hls') return
-    const video = videoRef.current
-    if (!video) return
-    let hls: { destroy: () => void } | null = null
-    let disposed = false
-    const onPlaying = () => setState('playing')
-    const onError = () => setState('error')
-    video.addEventListener('playing', onPlaying)
-    video.addEventListener('error', onError)
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = camera.stream_url
-    } else {
-      void import('hls.js').then(({ default: Hls }) => {
-        if (disposed) return
-        if (!Hls.isSupported()) return setState('error')
-        const h = new Hls({ liveDurationInfinity: true })
-        h.on(Hls.Events.ERROR, (_e, data) => data.fatal && setState('error'))
-        h.loadSource(camera.stream_url)
-        h.attachMedia(video)
-        hls = h
-      })
-    }
-    return () => {
-      disposed = true
-      video.removeEventListener('playing', onPlaying)
-      video.removeEventListener('error', onError)
-      hls?.destroy()
-      video.removeAttribute('src')
-    }
-  }, [camera.stream_url, camera.stream_type])
-
-  const fail = (msg: string) => (
-    <div className="grid aspect-video w-full place-items-center rounded-lg bg-raised px-4 text-center">
-      <div>
-        <VideoOff size={22} className="mx-auto text-muted-fg" aria-hidden />
-        <p className="mt-1.5 text-[13px] text-dim">{msg}</p>
-        <p className="mt-0.5 text-[11px] text-muted-fg">Gunakan frame bukti di bawah, atau buka lewat VMS/ATCS pemda.</p>
-      </div>
-    </div>
-  )
-
-  if (camera.stream_type === 'rtsp') return fail('Stream RTSP tidak bisa diputar langsung di browser.')
-  if (state === 'error' || camera.status === 'offline') return fail('Stream kamera tidak bisa dibuka saat ini.')
-
-  return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black">
-      {camera.stream_type === 'snapshot' ? (
-        <img
-          src={`${camera.stream_url}${camera.stream_url.includes('?') ? '&' : '?'}t=${tick}`}
-          alt={`Gambar terbaru CCTV ${camera.name}`}
-          className="h-full w-full object-cover"
-          onLoad={() => setState('playing')}
-          onError={() => setState('error')}
-        />
-      ) : (
-        <video ref={videoRef} className="h-full w-full object-cover" muted playsInline autoPlay aria-label={`Siaran langsung CCTV ${camera.name}`} />
-      )}
-      {state === 'loading' && (
-        <div className="absolute inset-0 grid place-items-center text-[13px] text-dim">
-          <span className="inline-flex items-center gap-2">
-            <Loader size={14} className="animate-spin" aria-hidden /> Menyambung ke kamera
-          </span>
-        </div>
-      )}
-      {state === 'playing' && (
-        <span className="sign absolute left-2 top-2 inline-flex items-center gap-1.5 rounded bg-black/60 px-1.5 py-0.5 text-[11px] text-sev-critical">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sev-critical" aria-hidden /> Live
-        </span>
-      )}
-    </div>
   )
 }
 

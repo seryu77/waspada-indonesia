@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import { MapPin, Megaphone, WifiOff } from 'lucide-react'
 import type { HazardType, Incident, LayerVisibility, ReportInput } from './types'
@@ -13,6 +13,8 @@ import { IncidentPanel } from './components/IncidentPanel'
 import { BottomSheet } from './components/BottomSheet'
 import { Toasts } from './components/Toasts'
 import { ReportForm } from './components/ReportForm'
+import { CameraViewer } from './components/CameraViewer'
+import { VideoWall } from './components/VideoWall'
 
 const DEFAULT_LAYERS: LayerVisibility = {
   hazards: Object.fromEntries(HAZARD_ORDER.map((h) => [h, true])) as Record<HazardType, boolean>,
@@ -46,6 +48,8 @@ export default function App({ operator = false }: { operator?: boolean }) {
   const [reportOpen, setReportOpen] = useState(false)
   const [pickMode, setPickMode] = useState(false)
   const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(null)
+  const [cameraId, setCameraId] = useState<string | null>(null)
+  const [wallOpen, setWallOpen] = useState(false)
 
   const active = useMemo(() => snapshot.incidents.filter((i) => i.status === 'active'), [snapshot.incidents])
   const visible = useMemo(
@@ -56,6 +60,7 @@ export default function App({ operator = false }: { operator?: boolean }) {
   const routes = useMemo(() => snapshot.routes.filter((r) => layers.routes[r.kind]), [snapshot.routes, layers.routes])
   const cameras = layers.cameras ? snapshot.cameras : []
   const selected = selectedId ? (snapshot.incidents.find((i) => i.id === selectedId) ?? null) : null
+  const camera = cameraId ? (snapshot.cameras.find((c) => c.id === cameraId) ?? null) : null
 
   const counts = useMemo(() => {
     const c: Partial<Record<HazardType, number>> = {}
@@ -75,8 +80,16 @@ export default function App({ operator = false }: { operator?: boolean }) {
 
   const flyTo = useCallback((i: Incident) => setFocus({ lat: i.lat, lng: i.lng, zoom: 11, key: Date.now() }), [])
 
+  // Data terbaru lewat ref, supaya callback untuk marker tetap sama dan marker tidak render ulang
+  // tiap ada update realtime
+  const latest = useRef({ snapshot, layers, mobile })
+  useEffect(() => {
+    latest.current = { snapshot, layers, mobile }
+  })
+
   const select = useCallback(
     (id: string) => {
+      const { snapshot, layers, mobile } = latest.current
       const inc = snapshot.incidents.find((i) => i.id === id)
       setSelectedId(id)
       if (inc) {
@@ -86,8 +99,22 @@ export default function App({ operator = false }: { operator?: boolean }) {
       }
       if (mobile) setSheetExpanded(true)
     },
-    [snapshot.incidents, flyTo, layers.hazards, mobile],
+    [flyTo],
   )
+
+  const selectCamera = useCallback(
+    (id: string) => {
+      const { snapshot, mobile } = latest.current
+      const cam = snapshot.cameras.find((c) => c.id === id)
+      setCameraId(id)
+      setWallOpen(false)
+      if (cam) setFocus({ lat: cam.lat, lng: cam.lng, zoom: 12, key: Date.now() })
+      if (mobile) setSheetExpanded(false)
+    },
+    [],
+  )
+  const closeCamera = useCallback(() => setCameraId(null), [])
+  const closeWall = useCallback(() => setWallOpen(false), [])
 
   const submitReport = async (r: ReportInput) => {
     const inc = await live.submitReport(r)
@@ -153,7 +180,15 @@ export default function App({ operator = false }: { operator?: boolean }) {
         {/* Lapisan UI kaca di atas peta penuh: top bar, lalu [rail layer | area peta | feed/detail] */}
         <div className="pointer-events-none absolute inset-0 z-10 flex flex-col gap-2 p-2 min-[900px]:gap-3 min-[900px]:p-3">
           <div className="pointer-events-auto">
-            <TopBar connection={live.connection} lastUpdate={live.lastUpdate} stats={stats} onReport={() => setReportOpen(true)} operator={operator} />
+            <TopBar
+              connection={live.connection}
+              lastUpdate={live.lastUpdate}
+              stats={stats}
+              onReport={() => setReportOpen(true)}
+              operator={operator}
+              wallOpen={wallOpen}
+              onToggleWall={() => setWallOpen((v) => !v)}
+            />
           </div>
 
           <AnimatePresence initial={false}>
@@ -200,6 +235,22 @@ export default function App({ operator = false }: { operator?: boolean }) {
               )}
 
               <AnimatePresence>
+                {camera && !wallOpen && (
+                  <div
+                    key="camera"
+                    className="pointer-events-none absolute left-0 right-0 top-[3.25rem] z-20 flex min-[900px]:bottom-0 min-[900px]:left-auto min-[900px]:right-0 min-[900px]:top-auto min-[900px]:w-[400px] min-[900px]:items-end"
+                  >
+                    <CameraViewer camera={camera} incidents={active} onClose={closeCamera} onSelectIncident={select} />
+                  </div>
+                )}
+                {wallOpen && (
+                  <div key="wall" className="absolute inset-0 z-30">
+                    <VideoWall cameras={snapshot.cameras} onClose={closeWall} onLocate={selectCamera} />
+                  </div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
                 {pickMode && (
                   <motion.div
                     key="pick"
@@ -239,6 +290,8 @@ export default function App({ operator = false }: { operator?: boolean }) {
             cameras={cameras}
             selectedId={selectedId}
             onSelect={select}
+            selectedCameraId={cameraId}
+            onSelectCamera={selectCamera}
             focus={focus}
             pickMode={pickMode}
             picked={reportOpen || pickMode ? picked : null}

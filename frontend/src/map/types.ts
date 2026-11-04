@@ -3,6 +3,7 @@ import type { Camera, Incident, Route, Zone } from '../types'
 export interface FocusTarget {
   lat: number
   lng: number
+  /** Zoom minimum. Kalau peta sudah lebih dekat, zoom-nya tidak diubah, hanya digeser. */
   zoom: number
   key: number
 }
@@ -14,6 +15,8 @@ export interface MapProps {
   cameras: Camera[]
   selectedId: string | null
   onSelect: (id: string) => void
+  selectedCameraId: string | null
+  onSelectCamera: (id: string) => void
   focus: FocusTarget | null
   pickMode: boolean
   picked: { lat: number; lng: number } | null

@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import type { Incident } from '../../types'
 import { HAZARDS, SEVERITY } from '../../lib/hazards'
@@ -15,7 +16,7 @@ interface Props {
  * - tinggi: kotak gelap, bingkai tebal berwarna
  * - sedang/rendah: kotak gelap kecil, bingkai tipis
  */
-export function IncidentMarker({ incident, selected, onSelect }: Props) {
+export const IncidentMarker = memo(function IncidentMarker({ incident, selected, onSelect }: Props) {
   const reduce = useReducedMotion()
   const meta = HAZARDS[incident.type]
   const sev = effectiveSeverity(incident)
@@ -63,4 +64,4 @@ export function IncidentMarker({ incident, selected, onSelect }: Props) {
       {incident.verifying && <span aria-hidden className="absolute -right-1 -top-1 h-2.5 w-2.5 border-2 border-bg bg-sev-medium" />}
     </button>
   )
-}
+})

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { APIProvider, AdvancedMarker, Circle, ColorScheme, InfoWindow, Map, Polygon, Polyline, useMap } from '@vis.gl/react-google-maps'
 import type { MapProps } from './types'
@@ -7,6 +7,9 @@ import { ROUTES, SEVERITY, ZONES } from '../lib/hazards'
 import { effectiveSeverity } from '../lib/sort'
 import { IncidentMarker } from './markers/IncidentMarker'
 import { CameraMarker } from './markers/CameraMarker'
+import { CameraClusterMarker } from './markers/CameraClusterMarker'
+import { CLUSTER_ZOOM_TO, layoutCameras, type MapViewport } from '../lib/cameraLayout'
+import { hasStream } from '../lib/camera'
 import { PickedMarker } from './markers/PickedMarker'
 import { routeText, zoneText } from './overlayText'
 
@@ -19,8 +22,10 @@ function Controller({ focus }: Pick<MapProps, 'focus'>) {
   useEffect(() => {
     if (!map || !focus) return
     const center = { lat: focus.lat, lng: focus.lng }
+    // focus.zoom adalah zoom minimum: kalau pengguna sudah zoom lebih dekat, jangan ditarik mundur
+    const zoom = Math.max(map.getZoom() ?? 0, focus.zoom)
     if (reduce) {
-      map.moveCamera({ center, zoom: focus.zoom })
+      map.moveCamera({ center, zoom })
       return
     }
     // Zoom baru dijalankan setelah geser selesai. Kalau zoom memotong animasi geser,
@@ -29,7 +34,7 @@ function Controller({ focus }: Pick<MapProps, 'focus'>) {
     const go = () => {
       if (done) return
       done = true
-      map.moveCamera({ center, zoom: focus.zoom })
+      map.moveCamera({ center, zoom })
     }
     map.panTo(center)
     const idle = google.maps.event.addListenerOnce(map, 'idle', go)
@@ -68,6 +73,36 @@ function Fitter() {
   return null
 }
 
+/**
+ * Kamera digabung per kota saat zoom jauh, dan hanya yang terlihat di layar saat zoom dekat.
+ * Posisi peta dibaca saat 'idle' (selesai bergerak), jadi tidak render ulang di tiap frame geser.
+ */
+function CameraLayer({ cameras, selectedCameraId, onSelectCamera }: Pick<MapProps, 'cameras' | 'selectedCameraId' | 'onSelectCamera'>) {
+  const map = useMap()
+  const [view, setView] = useState<MapViewport>({ zoom: 0, bounds: null })
+  useEffect(() => {
+    if (!map) return
+    const read = () => setView({ zoom: map.getZoom() ?? 0, bounds: map.getBounds()?.toJSON() ?? null })
+    const l = map.addListener('idle', read)
+    return () => l.remove()
+  }, [map])
+  const { clusters, singles } = useMemo(() => layoutCameras(cameras, view, selectedCameraId, hasStream), [cameras, view, selectedCameraId])
+  return (
+    <>
+      {clusters.map((g) => (
+        <AdvancedMarker key={`g-${g.key}`} position={{ lat: g.lat, lng: g.lng }} zIndex={2} clickable anchorLeft="-50%" anchorTop="-50%">
+          <CameraClusterMarker cluster={g} onZoom={(c) => map?.moveCamera({ center: { lat: c.lat, lng: c.lng }, zoom: CLUSTER_ZOOM_TO })} />
+        </AdvancedMarker>
+      ))}
+      {singles.map((c) => (
+        <AdvancedMarker key={c.id} position={{ lat: c.lat, lng: c.lng }} zIndex={1} clickable anchorLeft="-50%" anchorTop="-50%">
+          <CameraMarker camera={c} selected={selectedCameraId === c.id} onSelect={onSelectCamera} />
+        </AdvancedMarker>
+      ))}
+    </>
+  )
+}
+
 const dashIcons = (color: string) => [
   { icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: color, scale: 4 }, offset: '0', repeat: '16px' },
 ]
@@ -82,7 +117,8 @@ export default function GoogleMapView(p: MapProps) {
         colorScheme={ColorScheme.DARK}
         defaultCenter={INDONESIA_CENTER}
         defaultZoom={4}
-        maxZoom={12}
+        // Sampai level jalan, supaya posisi CCTV dan kejadian bisa dilihat persis
+        maxZoom={20}
         isFractionalZoomEnabled
         restriction={RESTRICTION}
         disableDefaultUI
@@ -131,11 +167,7 @@ export default function GoogleMapView(p: MapProps) {
           )
         })}
 
-        {p.cameras.map((c) => (
-          <AdvancedMarker key={c.id} position={{ lat: c.lat, lng: c.lng }} zIndex={1} anchorLeft="-50%" anchorTop="-50%">
-            <CameraMarker camera={c} />
-          </AdvancedMarker>
-        ))}
+        <CameraLayer cameras={p.cameras} selectedCameraId={p.selectedCameraId} onSelectCamera={p.onSelectCamera} />
 
         {p.incidents.map((i) => (
           <AdvancedMarker

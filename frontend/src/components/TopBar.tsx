@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Map as MapIcon, Megaphone, Phone, TriangleAlert } from 'lucide-react'
+import { Map as MapIcon, Megaphone, MonitorPlay, Phone, TriangleAlert } from 'lucide-react'
 import type { Connection } from '../types'
 import { clockWIB } from '../lib/format'
 
@@ -10,6 +10,9 @@ interface Props {
   stats: { active: number; critical: number; dispatched: number; review: number }
   onReport: () => void
   operator: boolean
+  /** Operator: buka/tutup video wall CCTV */
+  wallOpen?: boolean
+  onToggleWall?: () => void
 }
 
 const STATUS: Record<Connection, { label: string; short?: string; color: string }> = {
@@ -77,7 +80,7 @@ function Stat({ label, value, color }: { label: string; value: number; color?: s
   )
 }
 
-export function TopBar({ connection, lastUpdate, stats, onReport, operator }: Props) {
+export function TopBar({ connection, lastUpdate, stats, onReport, operator, wallOpen = false, onToggleWall }: Props) {
   return (
     <header className="pointer-events-auto glass flex h-13 shrink-0 items-stretch overflow-hidden rounded-2xl">
       <div className="flex shrink-0 items-center gap-2 px-2.5 sm:gap-2.5 md:px-4">
@@ -102,6 +105,19 @@ export function TopBar({ connection, lastUpdate, stats, onReport, operator }: Pr
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2 px-2 md:px-3">
+        {operator && onToggleWall && (
+          <button
+            type="button"
+            onClick={onToggleWall}
+            aria-pressed={wallOpen}
+            className={`flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-semibold transition-colors duration-150 ${
+              wallOpen ? 'border-fg text-fg' : 'border-line-strong text-dim hover:border-fg hover:text-fg'
+            }`}
+          >
+            <MonitorPlay size={16} aria-hidden />
+            <span className="hidden sm:inline">Video wall</span>
+          </button>
+        )}
         {operator ? (
           <a
             href="/"

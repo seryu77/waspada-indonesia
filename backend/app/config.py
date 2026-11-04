@@ -50,9 +50,13 @@ class Settings(BaseSettings):
     enable_magma: bool = True
 
     enable_vision: bool = False
-    vision_sample_s: float = 5
+    vision_sample_s: float = 20  # jeda minimal per kamera, supaya ringan untuk server pemda
+    vision_concurrency: int = 3  # kamera yang diproses bersamaan
+    vision_cities: str = ""  # kosong = semua kota; contoh "Banjarbaru,Ciamis"
+    vision_max_cameras: int = 0  # 0 = tanpa batas
     fire_weights: str = "weights/fire_smoke.pt"
     general_weights: str = "yolo11n.pt"
+    world_weights: str = "yolov8s-worldv2.pt"  # YOLO-World untuk api, asap, banjir; kosong = mati
 
     public_base_url: str = "http://localhost:8000"
     db_path: Path = DATA_DIR / "waspada.db"

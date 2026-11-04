@@ -109,7 +109,14 @@ class Camera(BaseModel):
     status: Literal["online", "offline"]
     detections_today: int = 0
     stream_url: str
-    stream_type: Literal["hls", "rtsp", "snapshot"]
+    # youtube/embed: siaran publik resmi yang boleh di-embed. portal: link ke portal CCTV resmi.
+    # none: kamera demo tanpa stream
+    stream_type: Literal["hls", "rtsp", "snapshot", "youtube", "embed", "portal", "none"]
+    source: str | None = None
+    # Alamat yang dibaca pipeline computer vision di server, kalau beda dari stream_url
+    # (misal player embed untuk ditonton, HLS mentah untuk deteksi)
+    vision_url: str | None = None
+    approx_location: bool = False
     last_frame_at: str | None = None
 
 
