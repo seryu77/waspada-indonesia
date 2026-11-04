@@ -4,7 +4,7 @@ import L from 'leaflet'
 import { Circle, MapContainer, Marker, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
 import { useReducedMotion } from 'motion/react'
 import type { MapProps } from './types'
-import { INDONESIA_BOUNDS } from '../lib/bounds'
+import { INDONESIA_BOUNDS, fitPadding } from '../lib/bounds'
 import { ROUTES, SEVERITY, ZONES } from '../lib/hazards'
 import { effectiveSeverity } from '../lib/sort'
 import { IncidentMarker } from './markers/IncidentMarker'
@@ -34,15 +34,6 @@ function ReactMarker({ lat, lng, z = 0, children }: { lat: number; lng: number; 
       {createPortal(<div style={{ position: 'absolute', transform: 'translate(-50%, -50%)' }}>{children}</div>, el)}
     </>
   )
-}
-
-/** Ruang yang tertutup top bar dan panel, supaya Indonesia muat di area yang terlihat. */
-/** Ruang yang tertutup panel kaca, diukur langsung dari DOM supaya Indonesia muat di area yang terlihat. */
-function fitPadding(): { tl: [number, number]; br: [number, number] } {
-  const w = (sel: string) => (document.querySelector(sel) as HTMLElement | null)?.offsetWidth ?? 0
-  const top = (document.querySelector('header') as HTMLElement | null)?.offsetHeight ?? 52
-  if (window.innerWidth < 900) return { tl: [8, top + 56], br: [8, 100] }
-  return { tl: [w('aside#layer-panel') + 28, top + 28], br: [w('aside#incident-panel') + 28, 28] }
 }
 
 function Controller({ focus, pickMode, onPick }: Pick<MapProps, 'focus' | 'pickMode' | 'onPick'>) {

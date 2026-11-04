@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { APIProvider, AdvancedMarker, Circle, ColorScheme, InfoWindow, Map, Polygon, Polyline, useMap } from '@vis.gl/react-google-maps'
 import type { MapProps } from './types'
-import { INDONESIA_BOUNDS, INDONESIA_CENTER, fitZoom } from '../lib/bounds'
+import { INDONESIA_BOUNDS, INDONESIA_CENTER, fitPadding, fitZoomBox } from '../lib/bounds'
 import { ROUTES, SEVERITY, ZONES } from '../lib/hazards'
 import { effectiveSeverity } from '../lib/sort'
 import { IncidentMarker } from './markers/IncidentMarker'
@@ -25,13 +25,36 @@ function Controller({ focus }: Pick<MapProps, 'focus'>) {
   return null
 }
 
+// Tengah peta harus tetap di atas Indonesia. Tidak strict, supaya layar mana pun (termasuk HP potret)
+// bisa zoom out sampai seluruh Indonesia terlihat; batas zoom out diatur minZoom di Fitter.
+const RESTRICTION = { latLngBounds: INDONESIA_BOUNDS, strictBounds: false }
+
+/** Tampilkan seluruh Indonesia di area yang tidak tertutup panel, lalu kunci zoom minimum di situ. */
+function Fitter() {
+  const map = useMap()
+  useEffect(() => {
+    if (!map) return
+    const fit = (initial: boolean) => {
+      const { tl, br } = fitPadding()
+      const div = map.getDiv()
+      const z = fitZoomBox(div.clientWidth - tl[0] - br[0], div.clientHeight - tl[1] - br[1])
+      map.setOptions({ minZoom: Math.max(3, Math.floor(z * 10) / 10 - 0.2) })
+      if (initial) map.fitBounds(INDONESIA_BOUNDS, { left: tl[0], top: tl[1], right: br[0], bottom: br[1] })
+    }
+    fit(true)
+    const onResize = () => fit(false)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [map])
+  return null
+}
+
 const dashIcons = (color: string) => [
   { icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: color, scale: 4 }, offset: '0', repeat: '16px' },
 ]
 
 export default function GoogleMapView(p: MapProps) {
   const [info, setInfo] = useState<{ pos: google.maps.LatLngLiteral; text: string } | null>(null)
-  const zoom0 = Math.max(3, fitZoom(window.innerWidth))
 
   return (
     <APIProvider apiKey={KEY} language="id" region="ID">
@@ -39,10 +62,10 @@ export default function GoogleMapView(p: MapProps) {
         mapId={MAP_ID}
         colorScheme={ColorScheme.DARK}
         defaultCenter={INDONESIA_CENTER}
-        defaultZoom={zoom0}
-        minZoom={Math.floor(zoom0)}
+        defaultZoom={4}
         maxZoom={12}
-        restriction={{ latLngBounds: INDONESIA_BOUNDS, strictBounds: true }}
+        isFractionalZoomEnabled
+        restriction={RESTRICTION}
         disableDefaultUI
         zoomControl
         gestureHandling="greedy"
@@ -56,6 +79,7 @@ export default function GoogleMapView(p: MapProps) {
         className="h-full w-full"
       >
         <Controller focus={p.focus} />
+        <Fitter />
 
         {p.zones.map((z) => {
           const s = ZONES[z.kind]
