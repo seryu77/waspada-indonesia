@@ -12,12 +12,12 @@ import { CameraMarker } from './markers/CameraMarker'
 import { PickedMarker } from './markers/PickedMarker'
 import { routeText, zoneText } from './overlayText'
 
-// Tile gelap gratis. Stadia jalan tanpa key di localhost; untuk domain publik daftar gratis di stadiamaps.com
-// atau ganti lewat VITE_TILE_URL (misal tile CARTO dark_all bila punya akses).
+// Tile gelap gratis tanpa key yang jalan di domain mana pun (CARTO). Stadia butuh domain terdaftar,
+// di domain publik hasilnya 401. Bisa diganti lewat VITE_TILE_URL.
 const TILE_URL =
-  (import.meta.env.VITE_TILE_URL as string) || 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}.png'
+  (import.meta.env.VITE_TILE_URL as string) || 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
 const TILE_ATTRIBUTION =
-  '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
 // Detail secukupnya: level kota sudah cukup untuk peta peringatan, tile lebih sedikit dan ringan
 const MAX_ZOOM = 12
