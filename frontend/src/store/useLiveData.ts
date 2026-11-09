@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Camera, Connection, Incident, ReportInput, Severity, Snapshot } from '../types'
+import type { AutomationRules, Camera, Connection, Incident, MyReport, NoteKind, ReportInput, Resolution, Severity, Snapshot, SnapshotMeta } from '../types'
 import { SIM_TEMPLATES, seedSnapshot } from '../lib/seed'
-import { heuristicVerify, resolveDispatch, routeDispatch, simulateIncident } from '../lib/localEngine'
+import { getLocalRules, heuristicVerify, manualDispatch, resolveDispatch, routeDispatch, setLocalRules, simulateIncident } from '../lib/localEngine'
 
 const isPending = (i: Incident) => i.dispatch?.state === 'countdown' || i.dispatch?.state === 'review'
 
@@ -12,7 +12,10 @@ type WsMessage =
   | { type: 'snapshot'; data: Snapshot }
   | { type: 'incident.upsert'; data: Incident }
   | { type: 'camera.update'; data: Camera }
+  | { type: 'meta.update'; data: SnapshotMeta }
   | { type: 'heartbeat'; data: { server_time: string } }
+
+export type CloseReason = Exclude<Resolution, 'expired'>
 
 export interface LiveData {
   snapshot: Snapshot
@@ -25,6 +28,40 @@ export interface LiveData {
   cancelDispatch: (id: string) => Promise<void>
   submitReport: (r: ReportInput) => Promise<Incident>
   triggerDemo: () => Promise<void>
+  /** Aturan otomasi yang berlaku (dari server, atau lokal saat offline) */
+  rules: AutomationRules
+  updateRules: (patch: Partial<AutomationRules>) => Promise<void>
+  resolveIncident: (id: string, reason: CloseReason, note?: string) => Promise<void>
+  addNote: (id: string, text: string, kind?: Exclude<NoteKind, 'reply'>) => Promise<void>
+  manualDispatch: (id: string) => Promise<void>
+  /** Laporan warga yang dikirim dari browser ini */
+  myReports: MyReport[]
+  /** Pelapor membalas operator */
+  replyReport: (id: string, text: string) => Promise<void>
+}
+
+const MY_REPORTS_KEY = 'waspada.myReports'
+function loadMyReports(): MyReport[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(MY_REPORTS_KEY) ?? '[]') as MyReport[]
+    return Array.isArray(raw) ? raw.filter((r) => r && typeof r.id === 'string' && typeof r.token === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+/** POST/PUT JSON ke server. Lempar error berisi pesan server kalau gagal (4xx). null kalau server tak terjangkau. */
+async function send<T>(url: string, body: unknown, method = 'POST'): Promise<T | null> {
+  let res: Response
+  try {
+    res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+  } catch {
+    return null
+  }
+  if (res.ok) return (await res.json()) as T
+  if (res.status >= 500 || res.status === 404) return null
+  const err = (await res.json().catch(() => null)) as { detail?: unknown } | null
+  throw new Error(typeof err?.detail === 'string' ? err.detail : `Permintaan ditolak server (${res.status})`)
 }
 
 function upsert(list: Incident[], inc: Incident): Incident[] {
@@ -42,11 +79,25 @@ function nextTemplate() {
   return SIM_TEMPLATES[bag.pop()!]
 }
 
-export function useLiveData(): LiveData {
+/** operator: halaman operator menerima catatan internal lewat /ws?role=operator */
+export function useLiveData({ operator = false }: { operator?: boolean } = {}): LiveData {
   const [snapshot, setSnapshot] = useState<Snapshot>(() => seedSnapshot())
   const [connection, setConnection] = useState<Connection>('connecting')
   const [lastUpdate, setLastUpdate] = useState<number | null>(null)
   const [newCritical, setNewCritical] = useState<Incident[]>([])
+  const [rules, setRules] = useState<AutomationRules>(() => getLocalRules())
+  const [myReports, setMyReports] = useState<MyReport[]>(loadMyReports)
+  const rememberReport = useCallback((r: MyReport) => {
+    setMyReports((list) => {
+      const next = [r, ...list.filter((x) => x.id !== r.id)].slice(0, 30)
+      localStorage.setItem(MY_REPORTS_KEY, JSON.stringify(next))
+      return next
+    })
+  }, [])
+  const snapRef = useRef(snapshot)
+  useEffect(() => {
+    snapRef.current = snapshot
+  }, [snapshot])
   const seenIds = useRef<Set<string>>(new Set(snapshot.incidents.map((i) => i.id)))
   const lastMsgAt = useRef<number>(0)
   const connectionRef = useRef<Connection>('connecting')
@@ -79,7 +130,7 @@ export function useLiveData(): LiveData {
 
     const connect = () => {
       const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-      ws = new WebSocket(`${proto}://${location.host}/ws`)
+      ws = new WebSocket(`${proto}://${location.host}/ws${operator ? '?role=operator' : ''}`)
       ws.onopen = () => {
         retry = 0
       }
@@ -91,6 +142,16 @@ export function useLiveData(): LiveData {
         if (msg.type === 'snapshot') {
           msg.data.incidents.forEach((i) => seenIds.current.add(i.id))
           setSnapshot(msg.data)
+          if (msg.data.meta?.rules) {
+            setLocalRules(msg.data.meta.rules)
+            setRules(msg.data.meta.rules)
+          }
+        } else if (msg.type === 'meta.update') {
+          setSnapshot((s) => ({ ...s, meta: msg.data }))
+          if (msg.data.rules) {
+            setLocalRules(msg.data.rules)
+            setRules(msg.data.rules)
+          }
         } else if (msg.type === 'incident.upsert') {
           applyIncident(msg.data)
         } else if (msg.type === 'camera.update') {
@@ -117,7 +178,7 @@ export function useLiveData(): LiveData {
         ws?.close()
       }
     }
-  }, [applyIncident])
+  }, [applyIncident, operator])
 
   // Tandai basi kalau tidak ada pesan dalam waktu lama
   useEffect(() => {
@@ -137,8 +198,12 @@ export function useLiveData(): LiveData {
       setLastUpdate(Date.now())
       return window.setTimeout(() => {
         const v = heuristicVerify(inc)
-        const done: Incident = { ...inc, verifying: false, verification: v, updated_at: new Date().toISOString() }
-        const d = routeDispatch(v)
+        const at = new Date().toISOString()
+        const done: Incident = { ...inc, verifying: false, verification: v, updated_at: at }
+        if (v.verdict === 'false_alarm' && v.confidence >= getLocalRules().false_alarm_hide_min) {
+          Object.assign(done, { status: 'resolved', resolution: 'false_alarm', resolved_at: at, resolved_by: 'ai' })
+        }
+        const d = done.status === 'active' ? routeDispatch(done, v) : undefined
         if (d) done.dispatch = d
         applyIncident(done)
       }, 2500)
@@ -163,7 +228,13 @@ export function useLiveData(): LiveData {
             .map((i) => i.id),
         )
         if (expire.size === 0) return snap
-        return { ...snap, incidents: snap.incidents.map((i) => (expire.has(i.id) ? { ...i, status: 'resolved' } : i)) }
+        const at = new Date().toISOString()
+        return {
+          ...snap,
+          incidents: snap.incidents.map((i) =>
+            expire.has(i.id) ? { ...i, status: 'resolved', resolution: 'expired', resolved_at: at, resolved_by: 'system' } : i,
+          ),
+        }
       })
       verifyTimers.push(spawnLocal())
       timer = window.setTimeout(tick, 20_000 + Math.random() * 10_000)
@@ -243,7 +314,8 @@ export function useLiveData(): LiveData {
           if (r.photo) fd.set('photo', r.photo)
           const res = await fetch('/api/reports', { method: 'POST', body: fd })
           if (res.ok) {
-            const inc = (await res.json()) as Incident
+            const { reporter_token, ...inc } = (await res.json()) as Incident & { reporter_token?: string }
+            if (reporter_token) rememberReport({ id: inc.id, token: reporter_token, at: inc.reported_at })
             applyIncident(inc)
             return inc
           }
@@ -268,10 +340,84 @@ export function useLiveData(): LiveData {
         verifying: true,
       }
       applyIncident(inc)
+      rememberReport({ id: inc.id, token: 'local', at: now })
       window.setTimeout(() => applyIncident({ ...inc, verifying: false, verification: heuristicVerify(inc) }), 2000)
       return inc
     },
-    [applyIncident],
+    [applyIncident, rememberReport],
+  )
+
+  const patchLocal = useCallback((id: string, fn: (i: Incident) => Incident) => {
+    setSnapshot((s) => ({ ...s, incidents: s.incidents.map((i) => (i.id === id ? { ...fn(i), updated_at: new Date().toISOString() } : i)) }))
+  }, [])
+
+  const online = () => connectionRef.current !== 'offline'
+
+  const updateRules = useCallback(async (patch: Partial<AutomationRules>) => {
+    if (online()) {
+      const r = await send<AutomationRules>('/api/automation', patch, 'PUT')
+      if (r) {
+        setLocalRules(r)
+        setRules(r)
+        return
+      }
+    }
+    const next = { ...getLocalRules(), ...patch }
+    setLocalRules(next)
+    setRules(next)
+  }, [])
+
+  const resolveIncident = useCallback(
+    async (id: string, reason: CloseReason, note?: string) => {
+      if (online()) {
+        const inc = await send<Incident>(`/api/incidents/${encodeURIComponent(id)}/resolve`, { reason, note: note || undefined })
+        if (inc) return applyIncident(inc)
+      }
+      const cur = snapRef.current.incidents.find((i) => i.id === id)
+      if (reason === 'handled' && cur && isPending(cur)) throw new Error('Putuskan dispatch 112 dulu sebelum menandai kejadian selesai')
+      const at = new Date().toISOString()
+      patchLocal(id, (i) => {
+        const dispatch = i.dispatch && isPending(i) ? resolveDispatch(i.dispatch, 'cancelled') : i.dispatch
+        const notes = note?.trim() ? [...(i.notes ?? []), { at, author: 'operator' as const, text: note.trim() }] : i.notes
+        return { ...i, dispatch, notes, status: 'resolved', resolution: reason, resolved_at: at, resolved_by: 'operator' }
+      })
+    },
+    [applyIncident, patchLocal],
+  )
+
+  const addNote = useCallback(
+    async (id: string, text: string, kind: Exclude<NoteKind, 'reply'> = 'note') => {
+      if (online()) {
+        const inc = await send<Incident>(`/api/incidents/${encodeURIComponent(id)}/notes`, { text, kind })
+        if (inc) return applyIncident(inc)
+      }
+      patchLocal(id, (i) => ({ ...i, notes: [...(i.notes ?? []), { at: new Date().toISOString(), author: 'operator', text: text.trim(), kind }] }))
+    },
+    [applyIncident, patchLocal],
+  )
+
+  const replyReport = useCallback(
+    async (id: string, text: string) => {
+      const mine = myReports.find((r) => r.id === id)
+      if (!mine) throw new Error('Laporan ini tidak dikirim dari perangkat ini')
+      if (online() && mine.token !== 'local') {
+        const inc = await send<Incident>(`/api/reports/${encodeURIComponent(id)}/reply`, { token: mine.token, text })
+        if (inc) return applyIncident(inc)
+      }
+      patchLocal(id, (i) => ({ ...i, notes: [...(i.notes ?? []), { at: new Date().toISOString(), author: 'pelapor', text: text.trim(), kind: 'reply' }] }))
+    },
+    [applyIncident, patchLocal, myReports],
+  )
+
+  const manualDispatchAction = useCallback(
+    async (id: string) => {
+      if (online()) {
+        const inc = await send<Incident>(`/api/incidents/${encodeURIComponent(id)}/dispatch/manual`, {})
+        if (inc) return applyIncident(inc)
+      }
+      patchLocal(id, (i) => ({ ...i, dispatch: manualDispatch(i) }))
+    },
+    [applyIncident, patchLocal],
   )
 
   return {
@@ -285,5 +431,12 @@ export function useLiveData(): LiveData {
     cancelDispatch: (id) => dispatchAction(id, 'cancel'),
     submitReport,
     triggerDemo,
+    rules,
+    updateRules,
+    resolveIncident,
+    addNote,
+    manualDispatch: manualDispatchAction,
+    myReports,
+    replyReport,
   }
 }

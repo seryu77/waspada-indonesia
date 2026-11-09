@@ -1,11 +1,28 @@
 // Mesin lokal untuk mode offline: verifier heuristik "simulasi", simulator, dan dispatch.
 // Logikanya mencerminkan backend (app/llm/heuristic.py, app/dispatch/manager.py).
-import type { Dispatch, HazardType, Incident, Severity, SourceKind, Verification } from '../types'
+import type { AutomationRules, Dispatch, HazardType, Incident, Severity, SourceKind, Verification } from '../types'
 import type { SimTemplate } from './seed'
 
 export const COUNTDOWN_S = 45
 /** Confidence minimal untuk auto-dispatch. Di bawahnya operator 112 harus memvalidasi dulu. */
 export const DISPATCH_CONFIDENCE_MIN = 0.87
+
+/** Sama dengan default backend (app/config.py Settings.rules) */
+export const DEFAULT_RULES: AutomationRules = {
+  auto_dispatch_enabled: true,
+  auto_dispatch_min: DISPATCH_CONFIDENCE_MIN,
+  countdown_s: COUNTDOWN_S,
+  false_alarm_hide_min: 0.7,
+  citizen_requires_review: true,
+  official_quake_auto: true,
+}
+
+/** Aturan yang dipakai simulator lokal. Disamakan dengan server setiap meta baru masuk. */
+let localRules: AutomationRules = { ...DEFAULT_RULES }
+export const getLocalRules = () => localRules
+export function setLocalRules(r: AutomationRules) {
+  localRules = { ...r }
+}
 
 const pct = (x: number) => `${Math.round(x * 100)}%`
 
@@ -59,14 +76,27 @@ export function heuristicVerify(inc: Incident): Verification {
   }
 }
 
-/** Sama dengan backend dispatch_route: 'auto' (hitung mundur), 'review' (tunggu operator), atau null. */
-export function dispatchRoute(v: Verification): 'auto' | 'review' | null {
-  if (v.severity !== 'high' && v.severity !== 'critical') return null
-  if (v.verdict === 'false_alarm') return null
-  return v.verdict === 'confirmed' && v.confidence >= DISPATCH_CONFIDENCE_MIN ? 'auto' : 'review'
+/** Laporan warga, termasuk laporan warga dari simulator demo. Sama dengan backend is_citizen. */
+export const isCitizen = (inc: Pick<Incident, 'source'>) =>
+  inc.source.kind === 'citizen' || inc.source.id === 'sim-citizen' || inc.source.id === 'sim-petabencana'
+
+/** Sama dengan backend review_reason: alasan wajib validasi operator, atau null kalau boleh auto-dispatch. */
+export function reviewReason(inc: Pick<Incident, 'source'>, v: Verification, rules: AutomationRules = localRules): string | null {
+  if (!rules.auto_dispatch_enabled) return 'Auto-dispatch dimatikan operator, menunggu validasi operator 112'
+  if (rules.citizen_requires_review && isCitizen(inc)) return 'Laporan warga wajib divalidasi operator 112'
+  if (v.verdict !== 'confirmed') return 'Verdict AI belum pasti, menunggu validasi operator 112'
+  if (v.confidence < rules.auto_dispatch_min) return `Confidence di bawah ${pct(rules.auto_dispatch_min)}, menunggu validasi operator 112`
+  return null
 }
 
-export function startReview(v: Verification, now = Date.now()): Dispatch {
+/** Sama dengan backend dispatch_route: 'auto' (hitung mundur), 'review' (tunggu operator), atau null. */
+export function dispatchRoute(inc: Pick<Incident, 'source'>, v: Verification, rules: AutomationRules = localRules): 'auto' | 'review' | null {
+  if (v.severity !== 'high' && v.severity !== 'critical') return null
+  if (v.verdict === 'false_alarm') return null
+  return reviewReason(inc, v, rules) ? 'review' : 'auto'
+}
+
+export function startReview(v: Verification, now = Date.now(), reason?: string): Dispatch {
   const at = new Date(now).toISOString()
   return {
     state: 'review',
@@ -74,27 +104,46 @@ export function startReview(v: Verification, now = Date.now()): Dispatch {
     mode: 'simulate',
     timeline: [
       { at, actor: 'ai', action: 'verified', note: `Diverifikasi (confidence ${pct(v.confidence)})` },
-      { at, actor: 'system', action: 'review_requested', note: `Confidence di bawah ${pct(DISPATCH_CONFIDENCE_MIN)}, menunggu validasi operator 112` },
+      { at, actor: 'system', action: 'review_requested', note: reason ?? `Confidence di bawah ${pct(DISPATCH_CONFIDENCE_MIN)}, menunggu validasi operator 112` },
     ],
   }
 }
 
-export function routeDispatch(v: Verification): Dispatch | undefined {
-  const r = dispatchRoute(v)
-  return r === 'auto' ? startCountdown(v) : r === 'review' ? startReview(v) : undefined
+export function routeDispatch(inc: Pick<Incident, 'source'>, v: Verification): Dispatch | undefined {
+  const r = dispatchRoute(inc, v)
+  if (r === 'auto') return startCountdown(v)
+  if (r === 'review') return startReview(v, Date.now(), reviewReason(inc, v) ?? undefined)
+  return undefined
+}
+
+/** Operator mengirim manual ke 112 (mode offline). */
+export function manualDispatch(inc: Incident): Dispatch {
+  const at = new Date().toISOString()
+  return {
+    state: 'sent',
+    agency: inc.verification?.recommended_agency ?? AGENCY[inc.type],
+    mode: 'simulate',
+    sent_at: at,
+    timeline: [
+      ...(inc.dispatch?.timeline ?? []),
+      { at, actor: 'operator', action: 'manual_sent', note: 'Operator mengirim manual ke 112' },
+      { at, actor: 'system', action: 'sent', note: 'Terkirim ke command center (simulasi)' },
+    ],
+  }
 }
 
 export function startCountdown(v: Verification, now = Date.now()): Dispatch {
   const at = new Date(now).toISOString()
+  const secs = localRules.countdown_s
   return {
     state: 'countdown',
     agency: v.recommended_agency,
     mode: 'simulate',
-    countdown_s: COUNTDOWN_S,
-    deadline: new Date(now + COUNTDOWN_S * 1000).toISOString(),
+    countdown_s: secs,
+    deadline: new Date(now + secs * 1000).toISOString(),
     timeline: [
       { at, actor: 'ai', action: 'verified', note: `Terverifikasi (confidence ${v.confidence.toFixed(2).replace('.', ',')})` },
-      { at, actor: 'system', action: 'countdown_started', note: `Hitung mundur ${COUNTDOWN_S} detik dimulai` },
+      { at, actor: 'system', action: 'countdown_started', note: `Hitung mundur ${secs} detik dimulai` },
     ],
   }
 }

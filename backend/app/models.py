@@ -11,6 +11,8 @@ SourceKind = Literal["official", "satellite", "cctv", "citizen", "demo", "simula
 Verdict = Literal["confirmed", "false_alarm", "uncertain"]
 DispatchState = Literal["review", "countdown", "sent", "cancelled", "failed"]
 Actor = Literal["ai", "operator", "system"]
+# Alasan kejadian ditutup: ditangani petugas, false alarm, duplikat, atau kedaluwarsa (sumber tidak lagi melaporkan)
+Resolution = Literal["handled", "false_alarm", "duplicate", "expired"]
 
 SEVERITY_RANK = {"low": 1, "medium": 2, "high": 3, "critical": 4}
 
@@ -55,6 +57,18 @@ class Dispatch(BaseModel):
     timeline: list[TimelineEntry] = []
 
 
+# note: catatan internal operator. update: pembaruan untuk publik dan pelapor.
+# question: pertanyaan operator ke pelapor. reply: balasan pelapor.
+NoteKind = Literal["note", "update", "question", "reply"]
+
+
+class OperatorNote(BaseModel):
+    at: str = Field(default_factory=now_iso)
+    author: Literal["operator", "pelapor"] = "operator"
+    text: str
+    kind: NoteKind = "note"
+
+
 class Incident(BaseModel):
     id: str
     type: HazardType
@@ -74,6 +88,10 @@ class Incident(BaseModel):
     verifying: bool | None = None
     verification: Verification | None = None
     dispatch: Dispatch | None = None
+    notes: list[OperatorNote] | None = None
+    resolution: Resolution | None = None
+    resolved_at: str | None = None
+    resolved_by: Actor | None = None
 
     def effective_severity(self) -> Severity:
         return self.verification.severity if self.verification else self.severity

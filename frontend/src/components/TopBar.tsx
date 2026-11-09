@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Map as MapIcon, Megaphone, MonitorPlay, Phone, TriangleAlert } from 'lucide-react'
+import { Globe, Inbox, LayoutDashboard, Map as MapIcon, Megaphone, MonitorPlay, Phone, TriangleAlert } from 'lucide-react'
 import type { Connection } from '../types'
 import { clockWIB } from '../lib/format'
 
@@ -13,6 +13,31 @@ interface Props {
   /** Operator: buka/tutup video wall CCTV */
   wallOpen?: boolean
   onToggleWall?: () => void
+  /** Operator: halaman yang sedang dibuka, untuk navigasi Peta / Dashboard */
+  view?: 'map' | 'dashboard'
+  /** Tombol tambahan di kanan (misal Otomasi di dashboard) */
+  actions?: ReactNode
+  /** Publik: tombol Laporan saya, muncul kalau pernah melapor dari browser ini */
+  myReports?: { count: number; unread: number; onOpen: () => void }
+}
+
+function OperatorNav({ view }: { view: 'map' | 'dashboard' }) {
+  const item = (href: string, on: boolean, Icon: typeof MapIcon, label: string) => (
+    <a
+      href={href}
+      aria-current={on ? 'page' : undefined}
+      className={`flex h-9 items-center gap-2 px-3 text-sm font-semibold transition-colors duration-150 ${on ? 'bg-fg text-bg' : 'text-dim hover:text-fg'}`}
+    >
+      <Icon size={16} aria-hidden />
+      <span className="hidden md:inline">{label}</span>
+    </a>
+  )
+  return (
+    <nav aria-label="Halaman operator" className="flex overflow-hidden rounded-lg border border-line-strong">
+      {item('/operator', view === 'map', MapIcon, 'Peta')}
+      {item('/operator/dashboard', view === 'dashboard', LayoutDashboard, 'Dashboard')}
+    </nav>
+  )
 }
 
 const STATUS: Record<Connection, { label: string; short?: string; color: string }> = {
@@ -80,7 +105,7 @@ function Stat({ label, value, color }: { label: string; value: number; color?: s
   )
 }
 
-export function TopBar({ connection, lastUpdate, stats, onReport, operator, wallOpen = false, onToggleWall }: Props) {
+export function TopBar({ connection, lastUpdate, stats, onReport, operator, wallOpen = false, onToggleWall, view = 'map', actions, myReports }: Props) {
   return (
     <header className="pointer-events-auto glass flex h-13 shrink-0 items-stretch overflow-hidden rounded-2xl">
       <div className="flex shrink-0 items-center gap-2 px-2.5 sm:gap-2.5 md:px-4">
@@ -96,7 +121,7 @@ export function TopBar({ connection, lastUpdate, stats, onReport, operator, wall
         <LiveIndicator connection={connection} lastUpdate={lastUpdate} />
       </div>
 
-      <div className="hidden lg:flex" aria-label="Ringkasan statistik">
+      <div className={view === 'dashboard' ? 'hidden' : 'hidden lg:flex'} aria-label="Ringkasan statistik">
         <Stat label="Kejadian aktif" value={stats.active} />
         <Stat label="Kritis" value={stats.critical} color="#F2555A" />
         {operator && <Stat label="Butuh validasi" value={stats.review} color="#EAB308" />}
@@ -105,6 +130,7 @@ export function TopBar({ connection, lastUpdate, stats, onReport, operator, wall
       </div>
 
       <div className="ml-auto flex shrink-0 items-center gap-2 px-2 md:px-3">
+        {actions}
         {operator && onToggleWall && (
           <button
             type="button"
@@ -119,15 +145,34 @@ export function TopBar({ connection, lastUpdate, stats, onReport, operator, wall
           </button>
         )}
         {operator ? (
-          <a
-            href="/"
-            className="flex h-9 items-center gap-2 rounded-lg border border-line-strong px-3 text-sm font-semibold text-dim transition-colors duration-150 hover:border-fg hover:text-fg"
-          >
-            <MapIcon size={16} aria-hidden />
-            <span className="hidden sm:inline">Peta publik</span>
-          </a>
+          <>
+            <OperatorNav view={view} />
+            <a
+              href="/"
+              title="Peta publik"
+              aria-label="Buka peta publik"
+              className="hidden h-9 w-9 items-center justify-center rounded-lg text-muted-fg transition-colors duration-150 hover:bg-raised hover:text-fg sm:flex"
+            >
+              <Globe size={16} aria-hidden />
+            </a>
+          </>
         ) : (
           <>
+            {myReports && myReports.count > 0 && (
+              <button
+                type="button"
+                onClick={myReports.onOpen}
+                className="relative hidden h-9 items-center gap-2 rounded-lg border border-line-strong px-3 text-sm font-semibold text-dim transition-colors duration-150 hover:border-fg hover:text-fg sm:flex"
+              >
+                <Inbox size={16} aria-hidden />
+                <span className="hidden md:inline">Laporan saya</span>
+                {myReports.unread > 0 && (
+                  <span className="grid h-5 min-w-5 place-items-center rounded-full bg-[#38BDF8] px-1 text-[11px] font-bold text-bg tabular" aria-label={`${myReports.unread} kabar baru`}>
+                    {myReports.unread}
+                  </span>
+                )}
+              </button>
+            )}
             <button
               type="button"
               onClick={onReport}

@@ -79,7 +79,10 @@ async def _official_dispatch(inc) -> None:
             simulated=False,
             needs_manual_review=False,
         )
-        await manager.start(inc)
+        if settings.official_quake_auto:
+            await manager.start(inc)
+        else:
+            await manager.request_review(inc, reason="Aturan gempa resmi langsung kirim dimatikan, menunggu validasi operator 112")
 
 
 @asynccontextmanager
@@ -130,7 +133,9 @@ app.include_router(router)
 
 @app.websocket("/ws")
 async def ws_endpoint(ws: WebSocket) -> None:
-    await hub.connect(ws)
+    # Halaman operator menyambung dengan ?role=operator supaya menerima catatan internal.
+    # Ini pemisahan tampilan, bukan autentikasi (belum ada login operator).
+    await hub.connect(ws, operator=ws.query_params.get("role") == "operator")
     try:
         while True:
             await ws.receive_text()  # klien tidak perlu mengirim apa pun; ini menjaga koneksi

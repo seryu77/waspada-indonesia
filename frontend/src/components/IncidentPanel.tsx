@@ -18,6 +18,8 @@ interface Props {
   autoMin?: number
   snapshot: Snapshot
   offline: boolean
+  myReportIds?: Set<string>
+  onOpenMine?: (id: string) => void
 }
 
 // Feed -> detail bergeser ke kiri (masuk lebih dalam), detail -> feed sebaliknya. Keluar lebih cepat dari masuk.
@@ -28,7 +30,7 @@ const slide: Variants = {
 }
 
 /** Isi panel kanan: feed atau detail, dengan transisi geser. */
-export function IncidentPanel({ incidents, selected, cameras, onSelect, onBack, onFocus, onConfirm, onCancel, header, operator, autoMin, snapshot, offline }: Props) {
+export function IncidentPanel({ incidents, selected, cameras, onSelect, onBack, onFocus, onConfirm, onCancel, header, operator, autoMin, snapshot, offline, myReportIds, onOpenMine }: Props) {
   const dir = selected ? 1 : -1
   return (
     <AnimatePresence mode="wait" initial={false} custom={dir}>
@@ -53,6 +55,8 @@ export function IncidentPanel({ incidents, selected, cameras, onSelect, onBack, 
             snapshot={snapshot}
             offline={offline}
             onSelect={onSelect}
+            mine={myReportIds?.has(selected.id)}
+            onOpenMine={() => onOpenMine?.(selected.id)}
           />
         </motion.div>
       ) : (

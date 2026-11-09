@@ -30,9 +30,10 @@ async def process_candidate(inc: Incident, frames: list[bytes] | None = None) ->
     inc.verifying = None
     inc.verification = v
     # False alarm yang yakin disembunyikan dari peta, tapi tetap tersimpan di DB + audit log
-    if v.verdict == "false_alarm" and v.confidence >= 0.7:
-        inc.status = "resolved"
-    await hub.upsert_incident(inc)
+    if v.verdict == "false_alarm" and v.confidence >= settings.false_alarm_hide_min:
+        await hub.resolve(inc, "false_alarm", "ai")
+    else:
+        await hub.upsert_incident(inc)
     await db.audit(inc.id, "ai", f"verified_{v.stage}", dump(v))
     await manager.route(inc)
     return inc

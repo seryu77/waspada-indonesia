@@ -7,6 +7,8 @@ export type Verdict = 'confirmed' | 'false_alarm' | 'uncertain'
 export type DispatchState = 'review' | 'countdown' | 'sent' | 'cancelled' | 'failed'
 export type Actor = 'ai' | 'operator' | 'system'
 export type LatLng = [number, number]
+/** Alasan kejadian ditutup. expired: sumber tidak lagi melaporkan atau simulasi habis waktunya */
+export type Resolution = 'handled' | 'false_alarm' | 'duplicate' | 'expired'
 
 export interface Source {
   id: string
@@ -44,6 +46,23 @@ export interface Dispatch {
   timeline: TimelineEntry[]
 }
 
+/** note: catatan internal. update: pembaruan untuk publik. question: pertanyaan ke pelapor. reply: balasan pelapor. */
+export type NoteKind = 'note' | 'update' | 'question' | 'reply'
+
+export interface OperatorNote {
+  at: string
+  author: 'operator' | 'pelapor'
+  text: string
+  kind?: NoteKind
+}
+
+/** Laporan yang dikirim dari browser ini, disimpan di localStorage */
+export interface MyReport {
+  id: string
+  token: string
+  at: string
+}
+
 export interface Incident {
   id: string
   type: HazardType
@@ -63,6 +82,20 @@ export interface Incident {
   verifying?: boolean
   verification?: Verification
   dispatch?: Dispatch
+  notes?: OperatorNote[]
+  resolution?: Resolution
+  resolved_at?: string
+  resolved_by?: Actor
+}
+
+/** Aturan otomasi yang bisa diubah operator (GET/PUT /api/automation) */
+export interface AutomationRules {
+  auto_dispatch_enabled: boolean
+  auto_dispatch_min: number
+  countdown_s: number
+  false_alarm_hide_min: number
+  citizen_requires_review: boolean
+  official_quake_auto: boolean
 }
 
 export type ZoneKind = 'burn' | 'smoke' | 'flood' | 'volcano_exclusion' | 'crime'
@@ -114,7 +147,16 @@ export interface Snapshot {
   zones: Zone[]
   routes: Route[]
   cameras: Camera[]
-  meta?: { verifier: string; dispatch_mode: string; countdown_s: number; auto_dispatch_min?: number; server_time: string }
+  meta?: SnapshotMeta
+}
+
+export interface SnapshotMeta {
+  verifier: string
+  dispatch_mode: string
+  countdown_s: number
+  auto_dispatch_min?: number
+  rules?: AutomationRules
+  server_time: string
 }
 
 export type Connection = 'connecting' | 'live' | 'stale' | 'offline'

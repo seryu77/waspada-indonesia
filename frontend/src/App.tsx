@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
-import { MapPin, Megaphone, WifiOff } from 'lucide-react'
+import { Inbox, MapPin, Megaphone, MessageCircle, WifiOff } from 'lucide-react'
 import type { HazardType, Incident, LayerVisibility, ReportInput } from './types'
 import { useLiveData } from './store/useLiveData'
 import { HAZARD_ORDER } from './lib/hazards'
@@ -15,6 +15,9 @@ import { Toasts } from './components/Toasts'
 import { ReportForm } from './components/ReportForm'
 import { CameraViewer } from './components/CameraViewer'
 import { VideoWall } from './components/VideoWall'
+import { useMedia } from './lib/hooks'
+import { MyReports } from './components/MyReports'
+import { citizenSignature, loadSeen, saveSeen } from './lib/citizen'
 
 const DEFAULT_LAYERS: LayerVisibility = {
   hazards: Object.fromEntries(HAZARD_ORDER.map((h) => [h, true])) as Record<HazardType, boolean>,
@@ -23,19 +26,8 @@ const DEFAULT_LAYERS: LayerVisibility = {
   cameras: true,
 }
 
-function useMedia(query: string) {
-  const [match, setMatch] = useState(() => window.matchMedia(query).matches)
-  useEffect(() => {
-    const m = window.matchMedia(query)
-    const on = () => setMatch(m.matches)
-    m.addEventListener('change', on)
-    return () => m.removeEventListener('change', on)
-  }, [query])
-  return match
-}
-
 export default function App({ operator = false }: { operator?: boolean }) {
-  const live = useLiveData()
+  const live = useLiveData({ operator })
   const { snapshot } = live
   const mobile = !useMedia('(min-width: 900px)')
   const wide = useMedia('(min-width: 1024px)')
@@ -50,6 +42,8 @@ export default function App({ operator = false }: { operator?: boolean }) {
   const [picked, setPicked] = useState<{ lat: number; lng: number } | null>(null)
   const [cameraId, setCameraId] = useState<string | null>(null)
   const [wallOpen, setWallOpen] = useState(false)
+  const [mineOpen, setMineOpen] = useState<{ id: string | null } | null>(null)
+  const [seen, setSeen] = useState<Record<string, string>>(loadSeen)
 
   const active = useMemo(() => snapshot.incidents.filter((i) => i.status === 'active'), [snapshot.incidents])
   const visible = useMemo(
@@ -87,6 +81,39 @@ export default function App({ operator = false }: { operator?: boolean }) {
     latest.current = { snapshot, layers, mobile }
   })
 
+  // Laporan saya: kabar baru = tahap status atau pesan operator berubah sejak terakhir dibuka
+  const myIds = useMemo(() => new Set(live.myReports.map((r) => r.id)), [live.myReports])
+  const unreadMine = useMemo(
+    () =>
+      snapshot.incidents.filter((i) => myIds.has(i.id) && seen[i.id] !== undefined && seen[i.id] !== citizenSignature(i)).sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
+    [snapshot.incidents, myIds, seen],
+  )
+  const markSeen = useCallback(
+    (ids: Iterable<string>) => {
+      setSeen((prev) => {
+        const next = { ...prev }
+        for (const id of ids) {
+          const inc = latest.current.snapshot.incidents.find((i) => i.id === id)
+          if (inc) next[id] = citizenSignature(inc)
+        }
+        saveSeen(next)
+        return next
+      })
+    },
+    [],
+  )
+  const openMine = useCallback(
+    (id: string | null = null) => {
+      setMineOpen({ id })
+      markSeen(myIds)
+    },
+    [markSeen, myIds],
+  )
+  // Selama panel terbuka, kabar baru langsung terbaca
+  useEffect(() => {
+    if (mineOpen && unreadMine.length > 0) markSeen(unreadMine.map((i) => i.id))
+  }, [mineOpen, unreadMine, markSeen])
+
   const select = useCallback(
     (id: string) => {
       const { snapshot, layers, mobile } = latest.current
@@ -101,6 +128,16 @@ export default function App({ operator = false }: { operator?: boolean }) {
     },
     [flyTo],
   )
+
+  // Dibuka dari dashboard dengan ?incident=ID: pilih kejadian itu begitu datanya tersedia
+  const pendingId = useRef(new URLSearchParams(location.search).get('incident'))
+  useEffect(() => {
+    const id = pendingId.current
+    if (id && snapshot.incidents.some((i) => i.id === id)) {
+      pendingId.current = null
+      select(id)
+    }
+  }, [snapshot.incidents, select])
 
   const selectCamera = useCallback(
     (id: string) => {
@@ -118,6 +155,11 @@ export default function App({ operator = false }: { operator?: boolean }) {
 
   const submitReport = async (r: ReportInput) => {
     const inc = await live.submitReport(r)
+    setSeen((prev) => {
+      const next = { ...prev, [inc.id]: citizenSignature(inc) }
+      saveSeen(next)
+      return next
+    })
     setReportOpen(false)
     setPicked(null)
     select(inc.id)
@@ -148,6 +190,8 @@ export default function App({ operator = false }: { operator?: boolean }) {
       autoMin={snapshot.meta?.auto_dispatch_min}
       snapshot={snapshot}
       offline={live.offline}
+      myReportIds={operator ? undefined : myIds}
+      onOpenMine={(id) => openMine(id)}
     />
   )
 
@@ -188,6 +232,7 @@ export default function App({ operator = false }: { operator?: boolean }) {
               operator={operator}
               wallOpen={wallOpen}
               onToggleWall={() => setWallOpen((v) => !v)}
+              myReports={operator ? undefined : { count: live.myReports.length, unread: unreadMine.length, onOpen: () => openMine() }}
             />
           </div>
 
@@ -216,7 +261,29 @@ export default function App({ operator = false }: { operator?: boolean }) {
             {/* Area peta yang terlihat: toast, tombol mobile, banner pilih lokasi */}
             <div className="relative min-w-0 flex-1">
               <div className="pointer-events-none absolute inset-x-0 top-[3.25rem] z-20 flex justify-center min-[900px]:top-3 min-[900px]:px-3">
-                <Toasts toasts={live.newCritical} onOpen={select} onDismiss={live.dismissToast} />
+                <div className="flex flex-col items-center gap-2">
+                  <AnimatePresence>
+                    {!operator && !mineOpen && unreadMine.length > 0 && (
+                      <motion.button
+                        key="mine-news"
+                        type="button"
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                        onClick={() => openMine(unreadMine[0].id)}
+                        className="glass-strong pointer-events-auto flex items-center gap-2.5 rounded-full border-[#38BDF8]/60 px-4 py-2 text-sm"
+                        role="status"
+                      >
+                        <MessageCircle size={16} className="text-[#38BDF8]" aria-hidden />
+                        <span>
+                          <span className="font-semibold">Ada kabar dari operator 112</span> untuk laporan Anda
+                        </span>
+                        <span className="sign text-[12px] text-[#38BDF8]">Buka</span>
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                  <Toasts toasts={live.newCritical} onOpen={select} onDismiss={live.dismissToast} />
+                </div>
               </div>
 
               {mobile && (
@@ -229,6 +296,17 @@ export default function App({ operator = false }: { operator?: boolean }) {
                       className="glass pointer-events-auto flex h-11 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold sm:hidden"
                     >
                       <Megaphone size={16} aria-hidden /> Lapor
+                    </button>
+                  )}
+                  {!operator && live.myReports.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => openMine()}
+                      aria-label={`Laporan saya${unreadMine.length ? `, ${unreadMine.length} kabar baru` : ''}`}
+                      className="glass pointer-events-auto relative grid h-11 w-11 place-items-center rounded-xl sm:hidden"
+                    >
+                      <Inbox size={17} aria-hidden />
+                      {unreadMine.length > 0 && <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-[#38BDF8]" aria-hidden />}
                     </button>
                   )}
                 </div>
@@ -326,6 +404,23 @@ export default function App({ operator = false }: { operator?: boolean }) {
             </BottomSheet>
           </div>
         )}
+
+        <AnimatePresence>
+          {mineOpen && (
+            <MyReports
+              key="mine"
+              reports={live.myReports}
+              incidents={snapshot.incidents}
+              openId={mineOpen.id}
+              onReply={live.replyReport}
+              onLocate={(id) => {
+                setMineOpen(null)
+                select(id)
+              }}
+              onClose={() => setMineOpen(null)}
+            />
+          )}
+        </AnimatePresence>
 
         <AnimatePresence>
           {reportOpen && (

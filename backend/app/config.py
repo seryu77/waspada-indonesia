@@ -40,6 +40,11 @@ class Settings(BaseSettings):
     dispatch_webhook_url: str = ""
     dispatch_countdown_s: int = 45
     dispatch_confidence_min: float = 0.87
+    # Aturan otomasi. Bisa diubah operator saat runtime lewat PUT /api/automation
+    auto_dispatch_enabled: bool = True
+    false_alarm_hide_min: float = 0.7  # false alarm dengan kepastian setinggi ini langsung ditutup
+    citizen_requires_review: bool = True  # laporan warga selalu divalidasi manusia
+    official_quake_auto: bool = True  # gempa BMKG M6+ langsung hitung mundur tanpa LLM
 
     demo_mode: bool = True
     simulator_min_s: float = 20
@@ -77,6 +82,16 @@ class Settings(BaseSettings):
     @property
     def active_verify_model(self) -> str:
         return self.gemini_verify_model if self.llm_provider == "gemini" else self.verify_model
+
+    def rules(self) -> dict:
+        return {
+            "auto_dispatch_enabled": self.auto_dispatch_enabled,
+            "auto_dispatch_min": self.dispatch_confidence_min,
+            "countdown_s": self.dispatch_countdown_s,
+            "false_alarm_hide_min": self.false_alarm_hide_min,
+            "citizen_requires_review": self.citizen_requires_review,
+            "official_quake_auto": self.official_quake_auto,
+        }
 
     @property
     def verifier_label(self) -> str:

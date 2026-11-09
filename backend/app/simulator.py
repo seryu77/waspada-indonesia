@@ -68,8 +68,7 @@ async def _expire_old() -> None:
         old = (now - datetime.fromisoformat(inc.reported_at)).total_seconds() > SIM_TTL_S
         counting = inc.dispatch is not None and inc.dispatch.state in ("review", "countdown")
         if (old or idx >= SIM_MAX_ACTIVE) and not counting:
-            inc.status = "resolved"
-            await hub.upsert_incident(inc)
+            await hub.resolve(inc, "expired", "system")
 
 
 async def run_simulator(templates: list[dict]) -> None:

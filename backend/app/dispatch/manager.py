@@ -3,7 +3,8 @@
 Hanya kejadian aktif dengan severity tinggi/kritis yang masuk alur dispatch:
 - confirmed + confidence >= DISPATCH_CONFIDENCE_MIN (87%): auto-dispatch. Hitung mundur
   DISPATCH_COUNTDOWN_S lalu terkirim otomatis. Operator masih bisa "Kirim sekarang" atau "Batalkan".
-- di bawah ambang (atau verdict uncertain): status "review". Tidak ada timer, tidak pernah
+- di bawah ambang, verdict uncertain, laporan warga (aturan citizen_requires_review), atau
+  auto-dispatch dimatikan operator: status "review". Tidak ada timer, tidak pernah
   terkirim sendiri. Operator harus "Validasi & kirim" atau "Tolak".
 Semua keputusan dicatat di audit log.
 """
@@ -15,6 +16,7 @@ from datetime import datetime, timedelta, timezone
 from .. import db
 from ..config import settings
 from ..hub import hub
+from ..llm.heuristic import AGENCY
 from ..models import Dispatch, Incident, TimelineEntry, now_iso
 from .base import DispatchAdapter
 from .simulate import SimulateAdapter
@@ -37,9 +39,28 @@ def dispatch_route(inc: Incident) -> str | None:
         return None
     if v.severity not in ("high", "critical") or v.verdict == "false_alarm":
         return None
-    if v.verdict == "confirmed" and v.confidence >= settings.dispatch_confidence_min:
-        return "auto"
-    return "review"
+    return "review" if review_reason(inc) else "auto"
+
+
+def is_citizen(inc: Incident) -> bool:
+    """Laporan warga, termasuk laporan warga dari simulator demo."""
+    return inc.source.kind == "citizen" or inc.source.id in ("sim-citizen", "sim-petabencana")
+
+
+def review_reason(inc: Incident) -> str | None:
+    """Alasan kejadian harus divalidasi operator, atau None kalau boleh auto-dispatch."""
+    v = inc.verification
+    if not v:
+        return "Belum ada verifikasi AI"
+    if not settings.auto_dispatch_enabled:
+        return "Auto-dispatch dimatikan operator, menunggu validasi operator 112"
+    if settings.citizen_requires_review and is_citizen(inc):
+        return "Laporan warga wajib divalidasi operator 112"
+    if v.verdict != "confirmed":
+        return "Verdict AI belum pasti, menunggu validasi operator 112"
+    if v.confidence < settings.dispatch_confidence_min:
+        return f"Confidence di bawah {pct(settings.dispatch_confidence_min)}, menunggu validasi operator 112"
+    return None
 
 
 def pct(x: float) -> str:
@@ -102,7 +123,7 @@ class DispatchManager:
         self._tasks[inc.id] = asyncio.create_task(self._countdown(inc.id, secs))
         return inc
 
-    async def request_review(self, inc: Incident, agency: str | None = None) -> Incident:
+    async def request_review(self, inc: Incident, agency: str | None = None, reason: str | None = None) -> Incident:
         """Confidence di bawah ambang: masuk antrean validasi operator, tanpa timer."""
         v = inc.verification
         tl = []
@@ -112,7 +133,7 @@ class DispatchManager:
             TimelineEntry(
                 actor="system",
                 action="review_requested",
-                note=f"Confidence di bawah {pct(settings.dispatch_confidence_min)}, menunggu validasi operator 112",
+                note=reason or review_reason(inc) or "Menunggu validasi operator 112",
             )
         )
         inc.dispatch = Dispatch(
@@ -159,6 +180,20 @@ class DispatchManager:
         await db.audit(incident_id, actor, action, {"result": d.state, "note": result.note, "payload": payload})
         await hub.upsert_incident(inc)
         return inc
+
+    async def manual(self, incident_id: str, agency: str | None = None) -> Incident | None:
+        """Operator mengirim ke 112 tanpa menunggu rekomendasi AI (misal laporan severity sedang)."""
+        inc = hub.incidents.get(incident_id)
+        if not inc:
+            return None
+        v = inc.verification
+        inc.dispatch = Dispatch(
+            state="review",
+            agency=agency or (v.recommended_agency if v else AGENCY.get(inc.type, "BPBD setempat")),
+            mode=self.adapter.mode,  # type: ignore[arg-type]
+            timeline=list(inc.dispatch.timeline) if inc.dispatch else [],
+        )
+        return await self._send(incident_id, "operator", "manual_sent", "Operator mengirim manual ke 112")
 
     def _stop_timer(self, incident_id: str) -> None:
         t = self._tasks.pop(incident_id, None)

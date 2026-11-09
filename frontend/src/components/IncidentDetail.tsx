@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { ArrowLeft, Bot, CircleCheck, LocateFixed } from 'lucide-react'
+import { ArrowLeft, Bot, CircleCheck, Inbox, LocateFixed, Megaphone } from 'lucide-react'
 import type { Camera, Incident, Snapshot } from '../types'
 import { HAZARDS, SEVERITY, SOURCE_KIND_LABEL } from '../lib/hazards'
 import { effectiveSeverity } from '../lib/sort'
@@ -21,6 +21,9 @@ interface Props {
   snapshot: Snapshot
   offline: boolean
   onSelect: (id: string) => void
+  /** Publik: kejadian ini laporan dari browser ini */
+  mine?: boolean
+  onOpenMine?: () => void
 }
 
 const VERDICT = {
@@ -38,7 +41,8 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
-export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm, onCancel, operator, autoMin, snapshot, offline, onSelect }: Props) {
+export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm, onCancel, operator, autoMin, snapshot, offline, onSelect, mine, onOpenMine }: Props) {
+  const updates = (i.notes ?? []).filter((n) => n.kind === 'update')
   const v = i.verification
   const sev = effectiveSeverity(i)
   return (
@@ -101,6 +105,35 @@ export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm
           </Field>
         )}
       </dl>
+
+      {!operator && mine && (
+        <button
+          type="button"
+          onClick={onOpenMine}
+          className="mx-4 mb-3 flex w-[calc(100%-2rem)] items-center gap-2 rounded-lg border border-[#38BDF8]/50 bg-[#0C2A3A]/60 px-3 py-2.5 text-left text-[13px] text-fg hover:bg-[#0C2A3A]"
+        >
+          <Inbox size={16} className="shrink-0 text-[#38BDF8]" aria-hidden />
+          <span>
+            <span className="font-semibold">Ini laporan Anda.</span> Pantau status dan balas operator di Laporan saya.
+          </span>
+        </button>
+      )}
+
+      {!operator && updates.length > 0 && (
+        <section aria-labelledby="upd-h" className="border-t border-line px-4 py-4">
+          <h3 id="upd-h" className="sign mb-2 flex items-center gap-2 text-[13px] text-muted-fg">
+            <Megaphone size={14} aria-hidden /> Pembaruan dari operator 112
+          </h3>
+          <ul className="space-y-2">
+            {[...updates].reverse().map((n, idx) => (
+              <li key={`${n.at}-${idx}`} className="border-l-2 border-accent pl-3">
+                <p className="text-[13px] leading-relaxed text-fg">{n.text}</p>
+                <p className="text-[11px] text-muted-fg tabular">{dateTimeWIB(n.at)}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {operator && <EvidencePanel incident={i} snapshot={snapshot} offline={offline} onSelect={onSelect} />}
 
