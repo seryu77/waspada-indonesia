@@ -15,7 +15,9 @@ import { Toasts } from './components/Toasts'
 import { ReportForm } from './components/ReportForm'
 import { CameraViewer } from './components/CameraViewer'
 import { VideoWall } from './components/VideoWall'
-import { useMedia } from './lib/hooks'
+import { useMedia, useNow } from './lib/hooks'
+import { incidentHeat, satelliteHeat } from './lib/hotspots'
+import { useHotspots } from './store/useHotspots'
 import { MyReports } from './components/MyReports'
 import { citizenSignature, loadSeen, saveSeen } from './lib/citizen'
 
@@ -24,6 +26,8 @@ const DEFAULT_LAYERS: LayerVisibility = {
   zones: { burn: true, smoke: true, flood: true, volcano_exclusion: true, crime: true },
   routes: { blocked: true, danger: true },
   cameras: true,
+  // Mati saat awal; data titik panas baru diambil setelah pengguna menyalakan toggle
+  heat: false,
 }
 
 export default function App({ operator = false }: { operator?: boolean }) {
@@ -53,6 +57,17 @@ export default function App({ operator = false }: { operator?: boolean }) {
   const zones = useMemo(() => snapshot.zones.filter((z) => layers.zones[z.kind]), [snapshot.zones, layers.zones])
   const routes = useMemo(() => snapshot.routes.filter((r) => layers.routes[r.kind]), [snapshot.routes, layers.routes])
   const cameras = layers.cameras ? snapshot.cameras : []
+
+  // Heatmap kebakaran (hanya saat toggle aktif): titik satelit (FIRMS, atau data contoh saat
+  // demo/offline) ditambah kebakaran dari CCTV dan laporan warga yang masuk realtime.
+  // Jam diperbarui tiap 30 detik supaya titik lama memudar dan titik demo baru muncul.
+  const heatNow = useNow(30_000)
+  const hotspotMode = live.offline ? 'demo' : snapshot.hotspot_meta?.mode
+  const satellite = useHotspots(layers.heat, hotspotMode, snapshot.hotspot_meta?.version, heatNow)
+  const heat = useMemo(
+    () => (layers.heat ? [...satelliteHeat(satellite.points, heatNow), ...incidentHeat(active, heatNow)] : []),
+    [layers.heat, satellite.points, active, heatNow],
+  )
   const selected = selectedId ? (snapshot.incidents.find((i) => i.id === selectedId) ?? null) : null
   const camera = cameraId ? (snapshot.cameras.find((c) => c.id === cameraId) ?? null) : null
 
@@ -207,6 +222,7 @@ export default function App({ operator = false }: { operator?: boolean }) {
       setLayers={setLayers}
       counts={counts}
       cameraCount={{ online: snapshot.cameras.filter((c) => c.status === 'online').length, total: snapshot.cameras.length }}
+      hotspots={{ mode: hotspotMode, meta: snapshot.hotspot_meta, count: satellite.points.length, loading: satellite.loading, failed: satellite.failed }}
       onTriggerDemo={() => {
         void live.triggerDemo()
         if (mobile) setLayersOpen(false)
@@ -366,6 +382,7 @@ export default function App({ operator = false }: { operator?: boolean }) {
             zones={zones}
             routes={routes}
             cameras={cameras}
+            heat={heat}
             selectedId={selectedId}
             onSelect={select}
             selectedCameraId={cameraId}

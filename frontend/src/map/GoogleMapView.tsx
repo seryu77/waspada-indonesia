@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { APIProvider, AdvancedMarker, Circle, ColorScheme, InfoWindow, Map, Polygon, Polyline, useMap } from '@vis.gl/react-google-maps'
 import type { MapProps } from './types'
@@ -12,6 +12,8 @@ import { CLUSTER_ZOOM_TO, layoutCameras, type MapViewport } from '../lib/cameraL
 import { hasStream } from '../lib/camera'
 import { PickedMarker } from './markers/PickedMarker'
 import { routeText, zoneText } from './overlayText'
+import { HeatRenderer, heatRadius } from './heat'
+import type { HeatPoint } from '../lib/hotspots'
 
 const KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
 const MAP_ID = (import.meta.env.VITE_GOOGLE_MAP_ID as string) || 'DEMO_MAP_ID'
@@ -103,6 +105,64 @@ function CameraLayer({ cameras, selectedCameraId, onSelectCamera }: Pick<MapProp
   )
 }
 
+/**
+ * Heatmap sebagai OverlayView di pane overlayLayer (di bawah marker). Google Maps sudah mencabut
+ * HeatmapLayer bawaannya, jadi pakai renderer canvas yang sama dengan Leaflet.
+ */
+function HeatLayer({ points }: { points: HeatPoint[] }) {
+  const map = useMap()
+  const pointsRef = useRef(points)
+  const redrawRef = useRef<() => void>(() => {})
+
+  useEffect(() => {
+    if (!map) return
+    const heat = new HeatRenderer()
+    let frame = 0
+    const overlay = new google.maps.OverlayView()
+    const render = () => {
+      frame = 0
+      const proj = overlay.getProjection()
+      if (!proj) return
+      const div = map.getDiv()
+      const w = div.clientWidth
+      const h = div.clientHeight
+      // Letakkan canvas tepat di pojok kiri atas layar, dalam koordinat pane
+      const corner = proj.fromContainerPixelToLatLng(new google.maps.Point(0, 0))
+      const origin = corner && proj.fromLatLngToDivPixel(corner)
+      if (!origin) return
+      heat.canvas.style.left = `${origin.x}px`
+      heat.canvas.style.top = `${origin.y}px`
+      const pts: [number, number, number, number?][] = []
+      for (const [lat, lng, wt, live] of pointsRef.current) {
+        const p = proj.fromLatLngToContainerPixel(new google.maps.LatLng(lat, lng))
+        if (p) pts.push([p.x, p.y, wt, live])
+      }
+      heat.draw(w, h, pts, heatRadius(map.getZoom() ?? 5))
+    }
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(render)
+    }
+    overlay.onAdd = () => overlay.getPanes()?.overlayLayer.appendChild(heat.canvas)
+    overlay.draw = schedule
+    overlay.onRemove = () => heat.canvas.remove()
+    overlay.setMap(map)
+    const idle = map.addListener('idle', schedule)
+    redrawRef.current = schedule
+    return () => {
+      cancelAnimationFrame(frame)
+      idle.remove()
+      overlay.setMap(null)
+      redrawRef.current = () => {}
+    }
+  }, [map])
+
+  useEffect(() => {
+    pointsRef.current = points
+    redrawRef.current()
+  }, [points])
+  return null
+}
+
 const dashIcons = (color: string) => [
   { icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, strokeColor: color, scale: 4 }, offset: '0', repeat: '16px' },
 ]
@@ -166,6 +226,8 @@ export default function GoogleMapView(p: MapProps) {
             />
           )
         })}
+
+        {p.heat.length > 0 && <HeatLayer points={p.heat} />}
 
         <CameraLayer cameras={p.cameras} selectedCameraId={p.selectedCameraId} onSelectCamera={p.onSelectCamera} />
 

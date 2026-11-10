@@ -31,6 +31,11 @@ class Hub:
         self.zones: dict[str, Zone] = {}
         self.routes: dict[str, Route] = {}
         self.cameras: dict[str, Camera] = {}
+        # Heatmap titik panas: [lat, lng, frp MW, detik epoch]
+        self.hotspots: list[list[float]] = []
+        # mode: live (FIRMS, updated_at kosong = belum ada data), demo (browser membuat data contoh), off
+        mode = "live" if settings.nasa_firms_map_key else "demo" if settings.demo_mode else "off"
+        self.hotspot_meta: dict = {"mode": mode, "satellites": [], "count": 0}
         # WebSocket -> True kalau klien halaman operator (lihat /ws?role=operator)
         self.clients: dict[WebSocket, bool] = {}
         self._lock = asyncio.Lock()
@@ -43,6 +48,8 @@ class Hub:
             "zones": [dump(z) for z in self.zones.values()],
             "routes": [dump(r) for r in self.routes.values()],
             "cameras": [dump(c) for c in self.cameras.values()],
+            # Titik heatmap tidak ikut snapshot; browser mengambilnya lewat /api/hotspots saat toggle aktif
+            "hotspot_meta": self.hotspot_meta,
             "meta": self.meta(),
         }
 
@@ -119,6 +126,14 @@ class Hub:
             if prev is None or dump(prev) | {"updated_at": ""} != dump(inc) | {"updated_at": ""}:
                 await self.upsert_incident(inc)
         return new
+
+    async def set_hotspots(self, points: list[list[float]], meta: dict) -> None:
+        # version naik hanya kalau titiknya berubah, jadi browser tahu kapan perlu mengambil ulang
+        version = self.hotspot_meta.get("version", 0) + (points != self.hotspots)
+        self.hotspots = points
+        self.hotspot_meta = {**meta, "updated_at": now_iso(), "version": version}
+        # Hanya kabar ringan; titiknya diambil browser yang heatmap-nya aktif
+        await self.broadcast("hotspots.meta", self.hotspot_meta)
 
     async def update_camera(self, cam: Camera) -> None:
         self.cameras[cam.id] = cam

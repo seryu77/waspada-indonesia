@@ -142,11 +142,29 @@ export interface Camera {
   last_frame_at?: string
 }
 
+/** Titik panas satelit untuk heatmap: [lat, lng, FRP dalam MW, waktu deteksi dalam detik epoch] */
+export type Hotspot = [number, number, number, number]
+
+export interface HotspotMeta {
+  /** live: data NASA FIRMS. demo: browser membuat data contoh. off: tidak ada data */
+  mode: 'live' | 'demo' | 'off'
+  satellites: string[]
+  count: number
+  /** Terakhir server mengecek satelit. Kosong saat mode live = data pertama belum masuk */
+  updated_at?: string
+  /** Deteksi satelit paling baru */
+  latest_at?: string
+  error?: string
+  /** Naik setiap titik berubah, tanda browser perlu mengambil ulang /api/hotspots */
+  version?: number
+}
+
 export interface Snapshot {
   incidents: Incident[]
   zones: Zone[]
   routes: Route[]
   cameras: Camera[]
+  hotspot_meta?: HotspotMeta
   meta?: SnapshotMeta
 }
 
@@ -166,6 +184,8 @@ export interface LayerVisibility {
   zones: Record<ZoneKind, boolean>
   routes: { blocked: boolean; danger: boolean }
   cameras: boolean
+  /** Heatmap titik panas (satelit + CCTV + laporan warga) */
+  heat: boolean
 }
 
 export interface ReportInput {

@@ -1,16 +1,30 @@
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'motion/react'
-import { Cctv, Layers, PanelLeftClose, PanelLeftOpen, Siren, X } from 'lucide-react'
-import type { HazardType, LayerVisibility, ZoneKind } from '../types'
+import { Cctv, Flame, Layers, PanelLeftClose, PanelLeftOpen, Siren, X } from 'lucide-react'
+import type { HazardType, HotspotMeta, LayerVisibility, ZoneKind } from '../types'
 import { HAZARD_ORDER, HAZARDS, ROUTES, ZONE_ORDER, ZONES } from '../lib/hazards'
 import { Legend } from './Legend'
+import { HEAT_CSS } from '../map/heat'
+import { timeAgo } from '../lib/format'
+import { useNow } from '../lib/hooks'
+
+export interface HotspotStatus {
+  /** undefined = belum tersambung ke server */
+  mode: HotspotMeta['mode'] | undefined
+  meta?: HotspotMeta
+  /** Titik satelit yang sedang tampil */
+  count: number
+  loading: boolean
+  failed: boolean
+}
 
 interface ControlsProps {
   layers: LayerVisibility
   setLayers: (fn: (l: LayerVisibility) => LayerVisibility) => void
   counts: Partial<Record<HazardType, number>>
   cameraCount: { online: number; total: number }
+  hotspots: HotspotStatus
   onTriggerDemo: () => void
 }
 
@@ -38,7 +52,53 @@ function Section({ title, children, action }: { title: string; children: ReactNo
   )
 }
 
-export function LayerControls({ layers, setLayers, counts, cameraCount, onTriggerDemo }: ControlsProps) {
+/** Status data satelit di bawah toggle heatmap: segar, menunggu, gagal, atau demo */
+function hotspotText({ mode, meta, count, loading, failed }: HotspotStatus, now: number): string {
+  if (failed) return 'Gagal mengambil titik panas dari server. Coba matikan lalu nyalakan lagi.'
+  if (loading) return 'Memuat titik panas...'
+  if (mode === 'demo') return 'Data contoh untuk demo. Kebakaran dari CCTV dan laporan warga tetap realtime.'
+  if (mode === 'off') return 'Data satelit tidak aktif. Hanya kebakaran dari CCTV dan laporan warga.'
+  if (mode !== 'live') return 'Menyambung ke server...'
+  if (meta?.error && !meta.updated_at) return 'Gagal memuat data satelit, mencoba lagi tiap 10 menit.'
+  if (!meta?.updated_at) return 'Menunggu data satelit pertama...'
+  const sats = meta.satellites.length ? ` (${meta.satellites.join(', ')})` : ''
+  const latest = meta.latest_at && count ? ` Deteksi terbaru ${timeAgo(meta.latest_at, now)}.` : ''
+  const warn = meta.error ? ' Pengecekan terakhir gagal, menampilkan data sebelumnya.' : ''
+  return `NASA FIRMS${sats}, dicek ${timeAgo(meta.updated_at, now)}.${latest}${warn}`
+}
+
+function HotspotSection({ layers, setLayers, hotspots }: Pick<ControlsProps, 'layers' | 'setLayers' | 'hotspots'>) {
+  const now = useNow(30_000)
+  return (
+    <Section title="Titik panas">
+      <Row id="heat" checked={layers.heat} onChange={(v) => setLayers((l) => ({ ...l, heat: v }))}>
+        <Flame size={15} className="shrink-0 text-[#FB923C]" aria-hidden />
+        <span className="flex-1">Heatmap kebakaran</span>
+        {layers.heat && !hotspots.loading && (
+          <span className="text-xs text-muted-fg tabular" title="Titik satelit 48 jam terakhir">
+            {hotspots.count}
+          </span>
+        )}
+      </Row>
+      {layers.heat ? (
+        <div className="px-3 pb-1 pt-1">
+          <div className="h-1.5 w-full rounded-full" style={{ background: HEAT_CSS }} aria-hidden />
+          <div className="mt-1 flex justify-between text-[11px] text-muted-fg" aria-hidden>
+            <span>Sedikit api</span>
+            <span>Besar / rapat</span>
+          </div>
+          <p className="pt-1.5 text-xs leading-snug text-muted-fg" aria-live="polite">
+            {hotspotText(hotspots, now)}
+          </p>
+        </div>
+      ) : (
+        <p className="px-3 pb-1 pt-0.5 text-xs leading-snug text-muted-fg">Nyalakan untuk melihat sebaran titik panas satelit, CCTV, dan laporan warga.</p>
+      )}
+    </Section>
+  )
+}
+
+export function LayerControls({ layers, setLayers, counts, cameraCount, hotspots, onTriggerDemo }: ControlsProps) {
   const all = HAZARD_ORDER.every((h) => layers.hazards[h])
   const setAll = (v: boolean) => setLayers((l) => ({ ...l, hazards: Object.fromEntries(HAZARD_ORDER.map((h) => [h, v])) as LayerVisibility['hazards'] }))
   return (
@@ -62,6 +122,8 @@ export function LayerControls({ layers, setLayers, counts, cameraCount, onTrigge
           )
         })}
       </Section>
+
+      <HotspotSection layers={layers} setLayers={setLayers} hotspots={hotspots} />
 
       <Section title="Area bahaya">
         {ZONE_ORDER.map((z: ZoneKind) => {
@@ -153,6 +215,24 @@ function IconRail({ layers, setLayers, onExpand }: Pick<ControlsProps, 'layers' 
           </button>
         )
       })}
+      <span className="my-1 h-px w-6 bg-line" aria-hidden />
+      <button
+        type="button"
+        aria-pressed={layers.heat}
+        aria-label={`${layers.heat ? 'Matikan' : 'Nyalakan'} heatmap kebakaran`}
+        title="Heatmap kebakaran"
+        onClick={() => setLayers((l) => ({ ...l, heat: !l.heat }))}
+        className="relative grid h-9 w-9 place-items-center transition-colors duration-150 hover:bg-raised"
+      >
+        <span
+          className="grid h-5 w-5 place-items-center rounded-full"
+          style={{ background: layers.heat ? HEAT_CSS : 'transparent', border: layers.heat ? 'none' : '1.5px solid #5B626C' }}
+          aria-hidden
+        >
+          <Flame size={11} color={layers.heat ? '#1B1D21' : '#5B626C'} strokeWidth={2.6} />
+        </span>
+        {layers.heat && <span className="absolute left-0 top-2 h-5 w-0.5 bg-[#EF4444]" aria-hidden />}
+      </button>
     </div>
   )
 }

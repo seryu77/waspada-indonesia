@@ -41,6 +41,8 @@ async def run_source(src: DataSource) -> None:
                 res = await src.fetch(client)
                 for z in res.zones:
                     hub.zones[z.id] = z
+                if res.hotspots is not None:
+                    await hub.set_hotspots(res.hotspots, res.hotspot_meta or {})
                 if res.replace:
                     if src.id == "magma" and res.zones:
                         # Ganti zona radius gunung api demo dengan data PVMBG
@@ -62,6 +64,9 @@ async def run_source(src: DataSource) -> None:
                 log.info("sumber %s: %d kejadian", src.id, len(res.incidents))
             except Exception as e:
                 log.warning("sumber %s gagal: %s", src.id, e)
+                if src.id == "firms":
+                    hub.hotspot_meta = {**hub.hotspot_meta, "error": str(e)[:160]}
+                    await hub.broadcast("hotspots.meta", hub.hotspot_meta)
             await asyncio.sleep(src.interval_s)
 
 

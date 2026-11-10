@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import L from 'leaflet'
 import { Circle, MapContainer, Marker, Polygon, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from 'react-leaflet'
@@ -14,6 +14,8 @@ import { CLUSTER_ZOOM_TO, layoutCameras, type MapViewport } from '../lib/cameraL
 import { hasStream } from '../lib/camera'
 import { PickedMarker } from './markers/PickedMarker'
 import { routeText, zoneText } from './overlayText'
+import { HeatRenderer, heatRadius } from './heat'
+import type { HeatPoint } from '../lib/hotspots'
 
 // Tile gelap gratis tanpa key yang jalan di domain mana pun (CARTO). Stadia butuh domain terdaftar,
 // di domain publik hasilnya 401. Bisa diganti lewat VITE_TILE_URL.
@@ -114,6 +116,46 @@ function CameraLayer({ cameras, selectedCameraId, onSelectCamera }: Pick<MapProp
   )
 }
 
+/** Heatmap di pane sendiri, di bawah marker. Digambar ulang setelah peta selesai bergerak. */
+function HeatLayer({ points }: { points: HeatPoint[] }) {
+  const map = useMap()
+  const pointsRef = useRef(points)
+  const redrawRef = useRef<() => void>(() => {})
+
+  useEffect(() => {
+    const pane = map.getPane('wnHeat') ?? map.createPane('wnHeat')
+    pane.style.zIndex = '350'
+    pane.style.pointerEvents = 'none'
+    const heat = new HeatRenderer()
+    // Disembunyikan selama animasi zoom, lalu digambar ulang di zoomend
+    heat.canvas.classList.add('leaflet-zoom-hide')
+    pane.appendChild(heat.canvas)
+    const redraw = () => {
+      const size = map.getSize()
+      L.DomUtil.setPosition(heat.canvas, map.containerPointToLayerPoint([0, 0]))
+      const pts = pointsRef.current.map(([lat, lng, w, live]): [number, number, number, number?] => {
+        const p = map.latLngToContainerPoint([lat, lng])
+        return [p.x, p.y, w, live]
+      })
+      heat.draw(size.x, size.y, pts, heatRadius(map.getZoom()))
+    }
+    redrawRef.current = redraw
+    redraw()
+    map.on('moveend zoomend resize', redraw)
+    return () => {
+      map.off('moveend zoomend resize', redraw)
+      heat.canvas.remove()
+      redrawRef.current = () => {}
+    }
+  }, [map])
+
+  useEffect(() => {
+    pointsRef.current = points
+    redrawRef.current()
+  }, [points])
+  return null
+}
+
 export default function LeafletMapView(p: MapProps) {
   return (
     <MapContainer
@@ -172,6 +214,8 @@ export default function LeafletMapView(p: MapProps) {
           </Tooltip>
         </Polyline>
       ))}
+
+      {p.heat.length > 0 && <HeatLayer points={p.heat} />}
 
       <CameraLayer cameras={p.cameras} selectedCameraId={p.selectedCameraId} onSelectCamera={p.onSelectCamera} />
 

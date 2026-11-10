@@ -40,6 +40,12 @@ async def snapshot(role: str | None = None) -> dict:
     return hub.snapshot(operator=role == "operator")
 
 
+@router.get("/hotspots")
+async def hotspots() -> dict:
+    """Titik panas untuk heatmap. Hanya diambil browser saat toggle heatmap dinyalakan."""
+    return {"hotspots": hub.hotspots, "meta": hub.hotspot_meta}
+
+
 @router.get("/health")
 async def health() -> dict:
     return {

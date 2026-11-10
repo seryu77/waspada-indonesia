@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { AutomationRules, Camera, Connection, Incident, MyReport, NoteKind, ReportInput, Resolution, Severity, Snapshot, SnapshotMeta } from '../types'
+import type { AutomationRules, Camera, Connection, HotspotMeta, Incident, MyReport, NoteKind, ReportInput, Resolution, Severity, Snapshot, SnapshotMeta } from '../types'
 import { SIM_TEMPLATES, seedSnapshot } from '../lib/seed'
 import { getLocalRules, heuristicVerify, manualDispatch, resolveDispatch, routeDispatch, setLocalRules, simulateIncident } from '../lib/localEngine'
 
@@ -13,6 +13,7 @@ type WsMessage =
   | { type: 'incident.upsert'; data: Incident }
   | { type: 'camera.update'; data: Camera }
   | { type: 'meta.update'; data: SnapshotMeta }
+  | { type: 'hotspots.meta'; data: HotspotMeta }
   | { type: 'heartbeat'; data: { server_time: string } }
 
 export type CloseReason = Exclude<Resolution, 'expired'>
@@ -154,6 +155,8 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
           }
         } else if (msg.type === 'incident.upsert') {
           applyIncident(msg.data)
+        } else if (msg.type === 'hotspots.meta') {
+          setSnapshot((s) => ({ ...s, hotspot_meta: msg.data }))
         } else if (msg.type === 'camera.update') {
           setSnapshot((s) => ({ ...s, cameras: s.cameras.map((c) => (c.id === msg.data.id ? msg.data : c)) }))
         }

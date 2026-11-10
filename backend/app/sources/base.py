@@ -16,6 +16,9 @@ class SourceResult:
     replace: bool = False
     # True = kejadian baru perlu lewat verifier LLM (laporan warga, CCTV)
     needs_verification: bool = False
+    # Titik panas untuk heatmap: [lat, lng, frp MW, detik epoch]. None = sumber ini tidak mengirim heatmap
+    hotspots: list[list[float]] | None = None
+    hotspot_meta: dict | None = None
 
 
 class DataSource(ABC):

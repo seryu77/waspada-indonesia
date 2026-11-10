@@ -1,4 +1,5 @@
 import type { Camera, Incident, Route, Zone } from '../types'
+import type { HeatPoint } from '../lib/hotspots'
 
 export interface FocusTarget {
   lat: number
@@ -13,6 +14,8 @@ export interface MapProps {
   zones: Zone[]
   routes: Route[]
   cameras: Camera[]
+  /** Titik heatmap kebakaran. Kosong = layer heatmap mati */
+  heat: HeatPoint[]
   selectedId: string | null
   onSelect: (id: string) => void
   selectedCameraId: string | null

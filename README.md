@@ -269,7 +269,7 @@ Rewrites: `/api/*` dan `/ws` ke backend, sisanya ke frontend. Browser memanggil 
 | Sumber | Status | Catatan |
 |---|---|---|
 | BMKG TEWS (`autogempa.json`, `gempaterkini.json`) | Aktif, tanpa key | Gempa 72 jam terakhir. M >= 6 langsung masuk hitung mundur |
-| NASA FIRMS (VIIRS) | Butuh `NASA_FIRMS_MAP_KEY` gratis | Dikelompokkan per grid 0,1 derajat supaya peta tidak penuh ribuan titik |
+| NASA FIRMS (VIIRS S-NPP, NOAA-20, NOAA-21, MODIS) | Butuh `NASA_FIRMS_MAP_KEY` gratis | Dicek tiap 10 menit. Titik mentah 48 jam terakhir jadi heatmap kebakaran (bobot FRP, memudar seiring waktu). Kluster per grid 0,1 derajat jadi kejadian di peta. Tanpa key, heatmap memakai data contoh |
 | PetaBencana.id | Aktif, tanpa key | Laporan warga 24 jam terakhir, lewat verifier |
 | MAGMA Indonesia (PVMBG) | Aktif, parsing halaman | Tidak ada API JSON resmi. Gunung Level III dan IV + radius larangan perkiraan. Gagal = pakai seed |
 | Kriminal | Data demo | Tidak ada API terbuka. Area rawan berupa polygon agregat dengan label sumber dan periode |
