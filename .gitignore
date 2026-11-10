@@ -11,3 +11,4 @@ backend/app/vision/frames/
 *.onnx
 graphify-out/
 backend/shared/
+backend/vision_test_out/
