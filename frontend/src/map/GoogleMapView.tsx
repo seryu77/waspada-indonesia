@@ -14,6 +14,7 @@ import { PickedMarker } from './markers/PickedMarker'
 import { routeText, zoneText } from './overlayText'
 import { HeatRenderer, heatRadius } from './heat'
 import type { HeatPoint } from '../lib/hotspots'
+import { useMedia } from '../lib/hooks'
 
 const KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string
 const MAP_ID = (import.meta.env.VITE_GOOGLE_MAP_ID as string) || 'DEMO_MAP_ID'
@@ -168,6 +169,7 @@ const dashIcons = (color: string) => [
 ]
 
 export default function GoogleMapView(p: MapProps) {
+  const mobile = !useMedia('(min-width: 900px)')
   const [info, setInfo] = useState<{ pos: google.maps.LatLngLiteral; text: string } | null>(null)
 
   return (
@@ -182,7 +184,8 @@ export default function GoogleMapView(p: MapProps) {
         isFractionalZoomEnabled
         restriction={RESTRICTION}
         disableDefaultUI
-        zoomControl
+        // Di layar kecil tombol zoom tertimpa bottom sheet; cukup pakai cubit dua jari
+        zoomControl={!mobile}
         gestureHandling="greedy"
         clickableIcons={false}
         draggableCursor={p.pickMode ? 'crosshair' : undefined}

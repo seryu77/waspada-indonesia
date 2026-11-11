@@ -36,7 +36,7 @@ export function ActivityLog({ events, connection, onSelect, incidentId, classNam
         title={
           <>
             Log aktivitas
-            {connection === 'live' && (
+            {(connection === 'live' || connection === 'polling') && (
               <span className="relative flex h-2 w-2" aria-label="Langsung">
                 <motion.span
                   className="absolute inset-0 bg-accent"

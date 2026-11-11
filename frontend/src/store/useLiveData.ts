@@ -3,10 +3,18 @@ import type { AutomationRules, Camera, Connection, HotspotMeta, Incident, MyRepo
 import { SIM_TEMPLATES, seedSnapshot } from '../lib/seed'
 import { getLocalRules, heuristicVerify, manualDispatch, resolveDispatch, routeDispatch, setLocalRules, simulateIncident } from '../lib/localEngine'
 
+/**
+ * Perubahan dikirim ke server hanya saat tersambung realtime. Di mode polling (serverless),
+ * state server tidak dibagi antar instance, jadi aksi diproses di browser.
+ */
+const canWrite = (c: Connection) => c !== 'offline' && c !== 'polling'
+
 const isPending = (i: Incident) => i.dispatch?.state === 'countdown' || i.dispatch?.state === 'review'
 
 const STALE_AFTER_MS = 45_000
 const RECONNECT_MAX_MS = 15_000
+/** Hosting tanpa WebSocket (Vercel serverless): ambil snapshot lewat HTTP berkala */
+const POLL_MS = 20_000
 
 type WsMessage =
   | { type: 'snapshot'; data: Snapshot }
@@ -65,6 +73,19 @@ async function send<T>(url: string, body: unknown, method = 'POST'): Promise<T |
   throw new Error(typeof err?.detail === 'string' ? err.detail : `Permintaan ditolak server (${res.status})`)
 }
 
+/**
+ * Gabungkan snapshot server ke state lokal (mode polling). Di serverless tiap request bisa kena
+ * instance berbeda, jadi kejadian lokal tidak dibuang, dan versi server hanya dipakai kalau lebih baru.
+ */
+function mergeSnapshot(local: Snapshot, server: Snapshot): Snapshot {
+  const byId = new Map(local.incidents.map((i) => [i.id, i]))
+  for (const inc of server.incidents) {
+    const cur = byId.get(inc.id)
+    if (!cur || Date.parse(inc.updated_at) > Date.parse(cur.updated_at)) byId.set(inc.id, inc)
+  }
+  return { ...server, incidents: [...byId.values()] }
+}
+
 function upsert(list: Incident[], inc: Incident): Incident[] {
   const i = list.findIndex((x) => x.id === inc.id)
   if (i === -1) return [inc, ...list]
@@ -106,6 +127,8 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
     connectionRef.current = connection
   }, [connection])
   const offline = connection === 'offline'
+  // Simulator dan hitung mundur dijalankan browser saat tidak ada server realtime
+  const localEngine = connection === 'offline' || connection === 'polling'
 
   const notifyIfNewCritical = useCallback((inc: Incident) => {
     const fresh = !seenIds.current.has(inc.id)
@@ -122,18 +145,69 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
     [notifyIfNewCritical],
   )
 
-  // WebSocket ke backend, reconnect dengan backoff
+  // WebSocket ke backend, reconnect dengan backoff. Kalau WebSocket tidak pernah tersambung tapi
+  // API HTTP hidup (hosting serverless seperti Vercel), pindah ke polling /api/snapshot.
   useEffect(() => {
     let ws: WebSocket | null = null
     let retry = 0
     let timer: number | undefined
+    let pollTimer: number | undefined
     let disposed = false
+    let everOpened = false
+    let polling = false
+    let pollFails = 0
+
+    const fetchSnapshot = async (): Promise<Snapshot | null> => {
+      try {
+        const res = await fetch('/api/snapshot', { cache: 'no-store' })
+        if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) return null
+        const data = (await res.json()) as Snapshot
+        return Array.isArray(data?.incidents) ? data : null
+      } catch {
+        return null
+      }
+    }
+
+    const applyPolled = (data: Snapshot, first: boolean) => {
+      if (first) {
+        data.incidents.forEach((i) => seenIds.current.add(i.id))
+        if (data.meta?.rules) {
+          setLocalRules(data.meta.rules)
+          setRules(data.meta.rules)
+        }
+      } else {
+        const known = new Set(snapRef.current.incidents.map((i) => i.id))
+        data.incidents.filter((i) => !known.has(i.id)).forEach(notifyIfNewCritical)
+      }
+      setSnapshot((s) => mergeSnapshot(s, data))
+      setLastUpdate(Date.now())
+      setConnection('polling')
+    }
+
+    const poll = async () => {
+      const data = await fetchSnapshot()
+      if (disposed) return
+      if (data) {
+        pollFails = 0
+        applyPolled(data, false)
+      } else if (++pollFails >= 2) {
+        setConnection('offline')
+      }
+      pollTimer = window.setTimeout(poll, POLL_MS)
+    }
+
+    const startPolling = (data: Snapshot) => {
+      polling = true
+      applyPolled(data, true)
+      pollTimer = window.setTimeout(poll, POLL_MS)
+    }
 
     const connect = () => {
       const proto = location.protocol === 'https:' ? 'wss' : 'ws'
       ws = new WebSocket(`${proto}://${location.host}/ws${operator ? '?role=operator' : ''}`)
       ws.onopen = () => {
         retry = 0
+        everOpened = true
       }
       ws.onmessage = (ev) => {
         const msg = JSON.parse(ev.data) as WsMessage
@@ -161,8 +235,13 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
           setSnapshot((s) => ({ ...s, cameras: s.cameras.map((c) => (c.id === msg.data.id ? msg.data : c)) }))
         }
       }
-      ws.onclose = () => {
-        if (disposed) return
+      ws.onclose = async () => {
+        if (disposed || polling) return
+        if (!everOpened) {
+          const data = await fetchSnapshot()
+          if (disposed) return
+          if (data) return startPolling(data)
+        }
         setConnection('offline')
         retry += 1
         timer = window.setTimeout(connect, Math.min(RECONNECT_MAX_MS, 1000 * 2 ** retry))
@@ -173,6 +252,7 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
     return () => {
       disposed = true
       window.clearTimeout(timer)
+      window.clearTimeout(pollTimer)
       if (ws?.readyState === WebSocket.CONNECTING) {
         // Tutup setelah tersambung supaya browser tidak mencatat error (StrictMode dev)
         ws.onopen = () => ws?.close()
@@ -181,7 +261,7 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
         ws?.close()
       }
     }
-  }, [applyIncident, operator])
+  }, [applyIncident, notifyIfNewCritical, operator])
 
   // Tandai basi kalau tidak ada pesan dalam waktu lama
   useEffect(() => {
@@ -214,9 +294,9 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
     [applyIncident],
   )
 
-  // Mode offline: simulator lokal supaya demo tetap hidup
+  // Mode offline/polling: simulator lokal supaya demo tetap hidup
   useEffect(() => {
-    if (!offline) return
+    if (!localEngine) return
     let timer: number
     const verifyTimers: number[] = []
     const tick = () => {
@@ -247,10 +327,10 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
       window.clearTimeout(timer)
       verifyTimers.forEach((t) => window.clearTimeout(t))
     }
-  }, [offline, spawnLocal])
+  }, [localEngine, spawnLocal])
 
   const triggerDemo = useCallback(async () => {
-    if (connectionRef.current !== 'offline') {
+    if (canWrite(connectionRef.current)) {
       try {
         const res = await fetch('/api/demo/trigger', { method: 'POST' })
         if (res.ok) return
@@ -261,9 +341,9 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
     spawnLocal('critical', true)
   }, [spawnLocal])
 
-  // Mode offline: hitung mundur yang habis otomatis terkirim
+  // Mode offline/polling: hitung mundur yang habis otomatis terkirim
   useEffect(() => {
-    if (!offline) return
+    if (!localEngine) return
     const t = window.setInterval(() => {
       setSnapshot((s) => {
         let changed = false
@@ -278,7 +358,7 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
       })
     }, 500)
     return () => window.clearInterval(t)
-  }, [offline])
+  }, [localEngine])
 
   const localResolve = useCallback((id: string, how: 'confirmed' | 'cancelled') => {
     setSnapshot((s) => ({
@@ -289,7 +369,7 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
 
   const dispatchAction = useCallback(
     async (id: string, action: 'confirm' | 'cancel') => {
-      if (connectionRef.current !== 'offline') {
+      if (canWrite(connectionRef.current)) {
         try {
           const res = await fetch(`/api/incidents/${encodeURIComponent(id)}/dispatch/${action}`, { method: 'POST' })
           if (res.ok) {
@@ -307,7 +387,7 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
 
   const submitReport = useCallback(
     async (r: ReportInput): Promise<Incident> => {
-      if (connectionRef.current !== 'offline') {
+      if (canWrite(connectionRef.current)) {
         try {
           const fd = new FormData()
           fd.set('type', r.type)
@@ -354,7 +434,7 @@ export function useLiveData({ operator = false }: { operator?: boolean } = {}): 
     setSnapshot((s) => ({ ...s, incidents: s.incidents.map((i) => (i.id === id ? { ...fn(i), updated_at: new Date().toISOString() } : i)) }))
   }, [])
 
-  const online = () => connectionRef.current !== 'offline'
+  const online = () => canWrite(connectionRef.current)
 
   const updateRules = useCallback(async (patch: Partial<AutomationRules>) => {
     if (online()) {

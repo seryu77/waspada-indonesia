@@ -42,6 +42,7 @@ function OperatorNav({ view }: { view: 'map' | 'dashboard' }) {
 
 const STATUS: Record<Connection, { label: string; short?: string; color: string }> = {
   live: { label: 'Live', color: '#3CCF7E' },
+  polling: { label: 'Live', color: '#3CCF7E' },
   stale: { label: 'Basi', color: '#EAB308' },
   offline: { label: 'Offline', color: '#F2555A' },
   connecting: { label: 'Menyambung', short: 'Sambung', color: '#929AA4' },
@@ -57,7 +58,7 @@ function LiveIndicator({ connection, lastUpdate }: Pick<Props, 'connection' | 'l
   return (
     <div className="flex items-center gap-2.5" role="status" aria-live="polite">
       <span className="relative flex h-2 w-2" aria-hidden>
-        {connection === 'live' && (
+        {(connection === 'live' || connection === 'polling') && (
           <motion.span
             className="absolute inset-0"
             style={{ background: s.color }}

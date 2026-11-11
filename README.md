@@ -260,6 +260,7 @@ Repo ini di-deploy sebagai satu project Vercel dengan dua service (`vercel.json`
 Rewrites: `/api/*` dan `/ws` ke backend, sisanya ke frontend. Browser memanggil `/api` di domain yang sama, jadi tidak perlu binding tambahan.
 
 - Set `VITE_GOOGLE_MAPS_API_KEY` di Vercel sebagai env var tipe **Config**, bukan Secret (variabel `VITE_` dibaca saat build, jadi perlu redeploy setelah diubah). Batasi key di Google Cloud Console ke domain production.
+- Fungsi serverless Vercel tidak mendukung WebSocket, jadi `/ws` mengembalikan 404. Frontend mendeteksinya: kalau WebSocket gagal tapi `/api/snapshot` hidup, data diambil lewat HTTP tiap 20 detik (status tetap **Live**, tanpa banner offline). Karena state backend tidak dibagi antar instance, simulator, hitung mundur, dan aksi operator/laporan di mode ini diproses di browser. Banner "Mode offline" hanya muncul kalau API juga tidak terjangkau.
 - Di Vercel hanya `/tmp` yang bisa ditulis. Database dan frame bukti disimpan di `/tmp/waspada`, dan state backend hanya bertahan per instance. Untuk production, pindahkan ke database terkelola.
 
 ---

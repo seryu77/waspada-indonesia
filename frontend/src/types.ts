@@ -177,7 +177,8 @@ export interface SnapshotMeta {
   server_time: string
 }
 
-export type Connection = 'connecting' | 'live' | 'stale' | 'offline'
+/** polling: hosting tanpa WebSocket, snapshot diambil lewat HTTP berkala */
+export type Connection = 'connecting' | 'live' | 'polling' | 'stale' | 'offline'
 
 export interface LayerVisibility {
   hazards: Record<HazardType, boolean>

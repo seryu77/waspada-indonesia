@@ -352,9 +352,9 @@ export default function App({ operator = false }: { operator?: boolean }) {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, transition: { duration: 0.12 } }}
-                    className="glass-strong pointer-events-auto absolute left-1/2 top-3 z-30 flex -translate-x-1/2 items-center gap-3 rounded-full px-4 py-2 text-sm font-semibold"
+                    className="glass-strong pointer-events-auto absolute left-1/2 top-[3.25rem] z-30 flex w-max max-w-full -translate-x-1/2 items-center gap-3 rounded-full px-4 py-2 text-sm font-semibold min-[900px]:top-3"
                   >
-                    <MapPin size={16} aria-hidden /> Klik peta untuk memilih lokasi kejadian
+                    <MapPin size={16} className="shrink-0" aria-hidden /> {mobile ? 'Ketuk peta untuk memilih lokasi' : 'Klik peta untuk memilih lokasi kejadian'}
                     <button type="button" onClick={() => setPickMode(false)} className="text-dim underline underline-offset-2 hover:text-fg">
                       Batal
                     </button>
@@ -397,7 +397,8 @@ export default function App({ operator = false }: { operator?: boolean }) {
           />
         </div>
 
-        {mobile && (
+        {/* Video wall memenuhi layar di mobile, jadi sheet disembunyikan supaya tidak menutupi grid */}
+        {mobile && !wallOpen && (
           <div id="incident-panel" className="pointer-events-none fixed inset-0 z-20">
             <BottomSheet
               expanded={sheetExpanded}
