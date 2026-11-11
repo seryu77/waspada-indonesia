@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Awasana - Overview Aplikasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  @page { size: A4; margin: 14mm 15mm 14mm 15mm; }
+  @page :first { margin: 0; }
+  :root {
+    --ink: #0F172A; --ink2: #334155; --muted: #64748B; --line: #E2E8F0; --soft: #F1F5F9;
+    --brand: #0B3B5C; --brand2: #0E7490; --alert: #EA580C; --ok: #16A34A; --warn: #CA8A04; --crit: #DC2626;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #fff; color: var(--ink); }
+  body { font-family: 'Plus Jakarta Sans', 'Noto Sans', sans-serif; font-size: 9.3pt; line-height: 1.48; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  code, .mono { font-family: 'JetBrains Mono', monospace; font-size: 8.6pt; }
+  code { background: var(--soft); padding: 1px 4px; border-radius: 3px; color: var(--brand); }
+  h1, h2, h3 { line-height: 1.2; color: var(--ink); }
+  h2 { font-size: 18pt; margin: 0 0 4mm; font-weight: 800; letter-spacing: -0.3px; }
+  h2 .num { color: var(--alert); margin-right: 3mm; }
+  h3 { font-size: 11.5pt; margin: 6mm 0 2mm; font-weight: 700; color: var(--brand); }
+  p { margin: 0 0 2.6mm; }
+  ul, ol { margin: 0 0 3mm; padding-left: 5mm; }
+  li { margin-bottom: .8mm; }
+  .section { page-break-before: always; }
+  .lead { font-size: 11pt; color: var(--ink2); }
+  .muted { color: var(--muted); }
+  .small { font-size: 8.4pt; }
+
+  /* Cover */
+  .cover { height: 297mm; width: 210mm; position: relative; overflow: hidden; color: #fff;
+    background: radial-gradient(circle at 80% 18%, rgba(234,88,12,.55), transparent 42%),
+                radial-gradient(circle at 10% 90%, rgba(14,116,144,.6), transparent 45%),
+                linear-gradient(160deg, #0B1E33 0%, #0B3B5C 60%, #0A2740 100%); }
+  .cover .grid { position: absolute; inset: 0; opacity: .12;
+    background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px);
+    background-size: 12mm 12mm; }
+  .cover .inner { position: absolute; left: 20mm; right: 20mm; top: 26mm; bottom: 22mm; display: flex; flex-direction: column; }
+  .logo { display: flex; align-items: center; gap: 4mm; font-weight: 800; font-size: 15pt; letter-spacing: .5px; }
+  .logo svg { width: 13mm; height: 13mm; }
+  .cover .kicker { margin-top: auto; font-size: 10pt; letter-spacing: 3px; text-transform: uppercase; color: #FDBA74; font-weight: 700; }
+  .cover h1 { font-size: 54pt; margin: 3mm 0 4mm; color: #fff; font-weight: 800; letter-spacing: -1.5px; }
+  .cover .tag { font-size: 15pt; max-width: 150mm; color: #E2E8F0; font-weight: 500; line-height: 1.4; }
+  .cover .chips { display: flex; flex-wrap: wrap; gap: 2.5mm; margin-top: 9mm; }
+  .cover .chip { border: 1px solid rgba(255,255,255,.35); border-radius: 20px; padding: 1.5mm 4mm; font-size: 9pt; background: rgba(255,255,255,.06); }
+  .cover .foot { margin-top: 16mm; display: flex; justify-content: space-between; font-size: 9pt; color: #CBD5E1; border-top: 1px solid rgba(255,255,255,.25); padding-top: 4mm; }
+
+  /* Blocks */
+  .card { border: 1px solid var(--line); border-radius: 3mm; padding: 4mm 5mm; background: #fff; break-inside: avoid; }
+  .card h4 { margin: 0 0 1.5mm; font-size: 10.5pt; }
+  .callout { border-left: 3px solid var(--alert); background: #FFF7ED; padding: 3.5mm 5mm; border-radius: 0 2mm 2mm 0; margin: 4mm 0; break-inside: avoid; }
+  .callout.blue { border-color: var(--brand2); background: #ECFEFF; }
+  .callout.green { border-color: var(--ok); background: #F0FDF4; }
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4mm; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3.5mm; }
+  .stat { background: var(--soft); border-radius: 3mm; padding: 4mm; break-inside: avoid; }
+  .stat b { display: block; font-size: 20pt; color: var(--brand); font-weight: 800; line-height: 1.1; }
+  .stat span { font-size: 8.8pt; color: var(--ink2); }
+  table { width: 100%; border-collapse: collapse; margin: 1.5mm 0 3mm; font-size: 8.5pt; break-inside: auto; }
+  th { text-align: left; background: var(--brand); color: #fff; font-weight: 600; padding: 1.6mm 2.3mm; }
+  td { padding: 1.5mm 2.3mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr { break-inside: avoid; }
+  tr:nth-child(even) td { background: #F8FAFC; }
+  .dot { display: inline-block; width: 3mm; height: 3mm; border-radius: 50%; vertical-align: -0.4mm; margin-right: 1.5mm; }
+  .pill { display: inline-block; padding: .3mm 2.2mm; border-radius: 10px; font-size: 8pt; font-weight: 700; }
+
+  /* TOC */
+  .toc { columns: 2; column-gap: 8mm; margin-top: 3mm; }
+  .toc div { display: flex; gap: 3mm; padding: 1.6mm 0; border-bottom: 1px dashed var(--line); break-inside: avoid; }
+  .toc div b { color: var(--alert); width: 7mm; }
+
+  /* Flow diagram */
+  .flow { display: flex; align-items: stretch; gap: 0; margin: 3mm 0 4mm; break-inside: avoid; }
+  .flow .step { flex: 1; background: var(--soft); border-radius: 2.5mm; padding: 3mm; font-size: 8.6pt; border-top: 3px solid var(--brand2); }
+  .flow .step b { display: block; font-size: 9.2pt; margin-bottom: 1mm; color: var(--ink); }
+  .flow .arr { width: 6mm; display: flex; align-items: center; justify-content: center; color: var(--muted); font-weight: 700; }
+  .diagram { width: 100%; break-inside: avoid; margin: 2mm 0 4mm; }
+
+  .persona { display: grid; grid-template-columns: 14mm 1fr; gap: 3.5mm; align-items: start; }
+  .ico { width: 14mm; height: 14mm; border-radius: 3mm; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 13pt; }
+  .footer-note { margin-top: 8mm; font-size: 8.5pt; color: var(--muted); border-top: 1px solid var(--line); padding-top: 3mm; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="grid"></div>
+  <div class="inner">
+    <div class="logo">
+      <svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="21" stroke="#FDBA74" stroke-width="2.5"/><circle cx="24" cy="24" r="13" stroke="#fff" stroke-width="2" opacity=".6"/><circle cx="24" cy="24" r="5" fill="#EA580C"/><path d="M24 3v8M24 37v8M3 24h8M37 24h8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+      AWASANA
+    </div>
+    <div class="kicker">Overview Aplikasi &middot; Dokumen Produk</div>
+    <h1>Awasana</h1>
+    <div class="tag">Peta real-time kondisi darurat Indonesia. Deteksi otomatis dari CCTV publik, verifikasi AI dua tahap, dan alur dispatch ke command center 112 dengan manusia tetap memegang keputusan.</div>
+    <div class="chips">
+      <span class="chip">Karhutla</span><span class="chip">Banjir</span><span class="chip">Gempa</span><span class="chip">Longsor</span>
+      <span class="chip">Kecelakaan</span><span class="chip">Gunung api</span><span class="chip">Kriminal</span>
+    </div>
+    <div class="foot"><span>Hackathon UNESA 2026</span><span>Versi dokumen 1.0 &middot; November 2026</span></div>
+  </div>
+</div>
+
+<!-- ============ RINGKASAN + TOC ============ -->
+<div class="section">
+  <h2>Ringkasan Eksekutif</h2>
+  <p class="lead"><b>Awasana</b> adalah platform pemantauan darurat yang menyatukan semua peringatan aktif di Indonesia ke dalam satu peta. Data datang dari sumber resmi (BMKG, PVMBG, NASA FIRMS), laporan warga, dan deteksi otomatis dari ratusan CCTV publik yang dibaca oleh computer vision.</p>
+  <p>Setiap kandidat kejadian diperiksa AI dalam dua tahap untuk menekan false alarm. Kejadian yang terverifikasi disiapkan untuk command center 112, lengkap dengan koordinat, bukti frame, dan instansi yang direkomendasikan. Operator 112 tetap memegang keputusan akhir: AI tidak pernah menelepon 112 sendiri, dan setiap keputusan tercatat di audit log.</p>
+
+  <div class="g3" style="margin:5mm 0">
+    <div class="stat"><b>7</b><span>jenis bahaya dipantau dalam satu peta</span></div>
+    <div class="stat"><b>&plusmn;230</b><span>kamera CCTV live resmi di 6 kota</span></div>
+    <div class="stat"><b>2 tahap</b><span>verifikasi AI sebelum diteruskan ke 112</span></div>
+    <div class="stat"><b>87%</b><span>ambang kepastian AI untuk hitung mundur otomatis</span></div>
+    <div class="stat"><b>45 dtk</b><span>hitung mundur dispatch yang bisa dibatalkan operator</span></div>
+    <div class="stat"><b>0 key</b><span>demo berjalan penuh tanpa API key apa pun</span></div>
+  </div>
+
+  <h3 style="margin-top:8mm">Daftar Isi</h3>
+  <div class="toc">
+    <div><b>01</b>Latar belakang dan masalah</div>
+    <div><b>02</b>Solusi dan nilai utama</div>
+    <div><b>03</b>Pengguna dan peran</div>
+    <div><b>04</b>Fitur aplikasi warga</div>
+    <div><b>05</b>Halaman dan dashboard operator 112</div>
+    <div><b>06</b>Jenis bahaya dan layer peta</div>
+    <div><b>07</b>Sumber data</div>
+    <div><b>08</b>Arsitektur sistem</div>
+    <div><b>09</b>CCTV live dan computer vision</div>
+    <div><b>10</b>Verifikasi AI anti false alarm</div>
+    <div><b>11</b>Alur dispatch 112 dan otomasi</div>
+    <div><b>12</b>Privasi, etika, dan keamanan</div>
+    <div><b>13</b>Teknologi, API, dan deploy</div>
+    <div><b>14</b>Skenario demo</div>
+    <div><b>15</b>Dampak dan roadmap</div>
+    <div><b>16</b>Batasan saat ini</div>
+  </div>
+</div>
+
+<!-- ============ 01-02 ============ -->
+<div class="section">
+  <h2><span class="num">01</span>Latar Belakang dan Masalah</h2>
+  <p>Indonesia berada di ring of fire dan menghadapi bencana hampir setiap hari: kebakaran hutan dan lahan, banjir, gempa, longsor, erupsi gunung api, serta kecelakaan dan gangguan keamanan di kota. Masalahnya bukan hanya kejadiannya, tetapi <b>lambatnya informasi</b>.</p>
+  <div class="g2">
+    <div class="card"><h4>Bagi warga</h4><ul class="small">
+      <li>Informasi tersebar di banyak kanal (BMKG, PVMBG, media sosial, grup chat).</li>
+      <li>Saat karhutla, banyak warga tidak tahu ada api atau asap di dekat mereka.</li>
+      <li>Tidak ada satu tempat untuk melihat rute terhalang, genangan, atau radius larangan gunung api.</li>
+    </ul></div>
+    <div class="card"><h4>Bagi petugas (112, damkar, polisi, BPBD)</h4><ul class="small">
+      <li>Laporan sering terlambat dan belum terverifikasi.</li>
+      <li>Waktu terbuang untuk laporan palsu atau duplikat.</li>
+      <li>Ribuan CCTV publik sudah terpasang, tetapi tidak ada yang menontonnya terus-menerus.</li>
+    </ul></div>
+  </div>
+
+  <h2 class="" style="margin-top:9mm"><span class="num">02</span>Solusi dan Nilai Utama</h2>
+  <p>Awasana menggabungkan tiga hal yang biasanya terpisah: <b>pemantauan</b>, <b>verifikasi</b>, dan <b>respons</b>.</p>
+  <div class="flow">
+    <div class="step"><b>Kumpulkan</b>Sumber resmi, satelit, laporan warga, dan CCTV publik masuk ke satu hub.</div>
+    <div class="arr">&rarr;</div>
+    <div class="step"><b>Deteksi</b>YOLO membaca frame CCTV: api, asap, banjir, tabrakan, kerumunan.</div>
+    <div class="arr">&rarr;</div>
+    <div class="step"><b>Verifikasi</b>LLM dua tahap menilai bukti + konteks cuaca dan kejadian sekitar.</div>
+    <div class="arr">&rarr;</div>
+    <div class="step"><b>Tampilkan</b>Peta publik real-time via WebSocket, toast untuk kejadian kritis.</div>
+    <div class="arr">&rarr;</div>
+    <div class="step" style="border-top-color:var(--alert)"><b>Respons</b>Operator 112 memvalidasi lalu dispatch ke command center.</div>
+  </div>
+  <h3>Prinsip desain</h3>
+  <ul>
+    <li><b>Human in the loop.</b> AI menyaring dan menyiapkan, manusia memutuskan. Kejadian dengan kepastian di bawah ambang tidak pernah terkirim otomatis.</li>
+    <li><b>Kejadian tidak pernah hilang.</b> Error API, kuota habis, atau output AI terblokir menghasilkan status "butuh cek manual", bukan dibuang.</li>
+    <li><b>Transparan.</b> Setiap kejadian menampilkan sumbernya (resmi, satelit, CCTV + AI, warga, demo) dan alasan AI dalam Bahasa Indonesia.</li>
+    <li><b>Privasi sejak awal.</b> Tanpa face recognition. Wajah dan plat nomor diblur sebelum disimpan atau dikirim ke AI.</li>
+    <li><b>Jalan tanpa key.</b> Seluruh demo bisa dijalankan tanpa API key, dengan fallback yang diberi label jelas.</li>
+  </ul>
+</div>
+
+<!-- ============ 03-04 ============ -->
+<div class="section">
+  <h2><span class="num">03</span>Pengguna dan Peran</h2>
+  <div class="card" style="margin-bottom:3mm"><div class="persona"><div class="ico" style="background:var(--brand2)">W</div><div>
+    <h4>Warga (halaman publik <code>/</code>)</h4>
+    <p class="small" style="margin:0">Melihat peta semua peringatan aktif, menonton CCTV resmi, mengirim laporan, mengikuti perkembangan laporannya, dan menghubungi 112 lewat satu tombol. Warga hanya melihat status "petugas sudah diberitahu", tanpa kontrol dispatch dan tanpa catatan internal.</p>
+  </div></div></div>
+  <div class="card" style="margin-bottom:3mm"><div class="persona"><div class="ico" style="background:var(--alert)">O</div><div>
+    <h4>Operator 112 (<code>/operator</code> dan <code>/operator/dashboard</code>)</h4>
+    <p class="small" style="margin:0">Satu-satunya peran yang bisa mengirim, memvalidasi, menolak, atau membatalkan dispatch. Melihat bukti pendukung, hasil verifikasi AI, video wall CCTV, dan berkomunikasi dengan pelapor.</p>
+  </div></div></div>
+  <div class="card"><div class="persona"><div class="ico" style="background:var(--brand)">S</div><div>
+    <h4>Sistem (AI + otomasi)</h4>
+    <p class="small" style="margin:0">Mengambil data sumber, menjalankan computer vision, memverifikasi kandidat, memulai hitung mundur sesuai aturan otomasi, dan mencatat semua keputusan ke audit log.</p>
+  </div></div></div>
+
+  <h2 style="margin-top:9mm"><span class="num">04</span>Fitur Aplikasi Warga</h2>
+  <table>
+    <tr><th style="width:30%">Fitur</th><th>Keterangan</th></tr>
+    <tr><td><b>Peta real-time</b></td><td>Semua peringatan aktif dalam satu peta Indonesia (dikunci ke wilayah RI). Indikator LIVE di top bar, update lewat WebSocket tanpa refresh.</td></tr>
+    <tr><td><b>Feed dan detail kejadian</b></td><td>Daftar kejadian terurut keparahan. Klik item: peta terbang ke lokasi, panel menampilkan detail, sumber, hasil AI, dan pembaruan publik dari operator.</td></tr>
+    <tr><td><b>Toast kritis</b></td><td>Notifikasi muncul saat ada kejadian kritis baru. Marker kritis berdenyut (dimatikan untuk pengguna reduced motion).</td></tr>
+    <tr><td><b>Layer dan legenda</b></td><td>Nyalakan atau matikan per jenis bahaya, zona (terbakar, asap, genangan, radius gunung api, area rawan), rute terhalang dan berbahaya, heatmap titik panas, dan CCTV.</td></tr>
+    <tr><td><b>CCTV live</b></td><td>Saat zoom jauh, kamera digabung per kota berisi jumlah kamera. Zoom dekat, klik marker LIVE untuk menonton siaran resmi langsung dari server pemda.</td></tr>
+    <tr><td><b>Lapor</b></td><td>Form laporan: jenis, deskripsi, lokasi dari peta atau GPS, foto opsional. Foto diblur otomatis sebelum disimpan.</td></tr>
+    <tr><td><b>Laporan saya</b></td><td>Pelapor melihat perjalanan laporan (diterima, dicek sistem, ditinjau operator 112, petugas diberitahu, selesai), menerima notifikasi kabar dari operator, dan bisa membalas. Hanya pemegang token laporan di browser pelapor yang bisa membalas.</td></tr>
+    <tr><td><b>Hubungi 112</b></td><td>Tombol <code>tel:112</code> di top bar untuk panggilan langsung.</td></tr>
+    <tr><td><b>Mode offline</b></td><td>Jika backend mati, frontend tetap jalan dengan seed data dan simulator lokal, ditandai banner "Mode offline". Tampilan responsif dengan bottom sheet di ponsel.</td></tr>
+  </table>
+</div>
+
+<!-- ============ 05 ============ -->
+<div class="section">
+  <h2><span class="num">05</span>Halaman dan Dashboard Operator 112</h2>
+  <p>Operator punya dua tampilan. <b>Halaman operator</b> (<code>/operator</code>) adalah peta dengan antrean dan kontrol dispatch. <b>Dashboard operator</b> (<code>/operator/dashboard</code>) adalah ruang kerja tiga kolom untuk menangani banyak kejadian dengan cepat.</p>
+
+  <div class="g3">
+    <div class="card"><h4>1. Antrean kerja</h4><p class="small">Tab Validasi, Hitung mundur, Laporan warga, Semua aktif, dan Riwayat. Ada pencarian, filter, dan aksi massal. Urutan: butuh validasi, lalu hitung mundur, lalu severity. Balasan pelapor ditandai "Pelapor membalas".</p></div>
+    <div class="card"><h4>2. Ruang kerja</h4><p class="small">Panel <b>Kenapa terindikasi</b>: deteksi, verifikasi AI dengan bar kepastian dibanding ambang, dan aturan otomasi yang menentukan jalurnya. Lalu bukti pendukung, keputusan dispatch, kirim manual, tutup kejadian, dan catatan.</p></div>
+    <div class="card"><h4>3. Log aktivitas</h4><p class="small">Log live semua aksi AI, sistem, dan operator. Bisa difilter per pelaku dan diekspor ke CSV untuk pelaporan dan akuntabilitas.</p></div>
+  </div>
+
+  <h3>Panel bukti pendukung</h3>
+  <p>Ditampilkan di atas tombol validasi agar operator memutuskan berdasarkan data, bukan hanya angka AI:</p>
+  <ul class="small">
+    <li><b>Indikator otomatis</b> yang mendukung atau melemahkan dugaan.</li>
+    <li><b>Kondisi lokasi</b> dari Open-Meteo: suhu, kelembapan, angin, hujan sekarang dan 24 jam, kualitas udara (AQI, PM2.5), ketinggian.</li>
+    <li><b>Siaran langsung</b> CCTV pendeteksi atau CCTV terdekat, plus <b>rekaman frame</b> saat deteksi (sudah diblur).</li>
+    <li><b>Kejadian lain dalam radius 15 km</b> untuk melihat korelasi atau duplikat.</li>
+  </ul>
+
+  <h3>Aksi operator</h3>
+  <table>
+    <tr><th style="width:28%">Aksi</th><th>Kapan dipakai</th></tr>
+    <tr><td>Kirim sekarang / Batalkan</td><td>Saat hitung mundur berjalan (kepastian AI di atas ambang).</td></tr>
+    <tr><td>Validasi &amp; kirim / Tolak</td><td>Saat status "Butuh validasi" (kepastian di bawah ambang, verdict uncertain, atau laporan warga).</td></tr>
+    <tr><td>Kirim manual ke 112</td><td>Operator menilai kejadian perlu ditangani walau tidak masuk jalur otomatis.</td></tr>
+    <tr><td>Tutup kejadian</td><td>Sebagai <i>ditangani</i>, <i>false alarm</i>, atau <i>duplikat</i>.</td></tr>
+    <tr><td>Pesan</td><td><b>Internal</b> (hanya operator), <b>Pembaruan publik</b> (tampil di peta publik dan Laporan saya), atau <b>Tanya pelapor</b> (khusus laporan dari aplikasi).</td></tr>
+    <tr><td>Video wall</td><td>Grid CCTV live per kota, 6 video per halaman.</td></tr>
+  </table>
+
+  <h3>Panel Otomasi</h3>
+  <p class="small">Operator dapat mengatur aturan langsung dari dashboard (<code>GET/PUT /api/automation</code>), lengkap dengan simulasi dampaknya terhadap antrean saat ini:</p>
+  <div class="g3 small">
+    <div class="stat"><b style="font-size:12pt">Auto-dispatch</b><span>aktif/nonaktif dan ambang kepastian (0,50 sampai 0,99)</span></div>
+    <div class="stat"><b style="font-size:12pt">Hitung mundur</b><span>durasi 10 sampai 300 detik</span></div>
+    <div class="stat"><b style="font-size:12pt">Sembunyi false alarm</b><span>ambang kepastian untuk menyembunyikan dari peta</span></div>
+    <div class="stat"><b style="font-size:12pt">Laporan warga</b><span>wajib divalidasi operator</span></div>
+    <div class="stat"><b style="font-size:12pt">Gempa BMKG M6+</b><span>langsung masuk hitung mundur</span></div>
+    <div class="stat"><b style="font-size:12pt">Pintasan</b><span><code>J</code>/<code>K</code> pindah kejadian, <code>/</code> cari</span></div>
+  </div>
+</div>
+
+<!-- ============ 06-07 ============ -->
+<div class="section">
+  <h2><span class="num">06</span>Jenis Bahaya dan Layer Peta</h2>
+  <div class="g2">
+    <div>
+      <table>
+        <tr><th>Jenis bahaya</th><th>Warna</th></tr>
+        <tr><td><span class="dot" style="background:#FB923C"></span>Kebakaran / Karhutla</td><td class="mono">#FB923C</td></tr>
+        <tr><td><span class="dot" style="background:#38BDF8"></span>Banjir</td><td class="mono">#38BDF8</td></tr>
+        <tr><td><span class="dot" style="background:#FBBF24"></span>Gempa</td><td class="mono">#FBBF24</td></tr>
+        <tr><td><span class="dot" style="background:#D4A373"></span>Longsor</td><td class="mono">#D4A373</td></tr>
+        <tr><td><span class="dot" style="background:#2DD4BF"></span>Kecelakaan</td><td class="mono">#2DD4BF</td></tr>
+        <tr><td><span class="dot" style="background:#F87171"></span>Gunung api</td><td class="mono">#F87171</td></tr>
+        <tr><td><span class="dot" style="background:#C084FC"></span>Kriminal</td><td class="mono">#C084FC</td></tr>
+      </table>
+    </div>
+    <div>
+      <table>
+        <tr><th>Tingkat keparahan</th><th>Arti</th></tr>
+        <tr><td><span class="pill" style="background:#FEE2E2;color:#B91C1C">Kritis</span></td><td>Ancaman jiwa langsung, prioritas dispatch</td></tr>
+        <tr><td><span class="pill" style="background:#FFEDD5;color:#C2410C">Tinggi</span></td><td>Butuh respons cepat, bisa masuk dispatch</td></tr>
+        <tr><td><span class="pill" style="background:#FEF9C3;color:#A16207">Sedang</span></td><td>Dipantau, informasi untuk warga</td></tr>
+        <tr><td><span class="pill" style="background:#F1F5F9;color:#475569">Rendah</span></td><td>Informasi umum</td></tr>
+      </table>
+      <table>
+        <tr><th>Zona dan rute</th></tr>
+        <tr><td>Zona terbakar, sebaran asap, zona genangan, radius larangan gunung api, area rawan kriminal (agregat), rute terhalang, rute dalam bahaya, heatmap titik panas satelit.</td></tr>
+      </table>
+    </div>
+  </div>
+  <p class="small muted">Peta memakai Google Maps (vector, dark) bila key tersedia, atau Leaflet dengan tile CARTO gelap tanpa key. Zoom minimum dihitung dari ukuran layar agar seluruh Indonesia muat, zoom maksimum level jalan.</p>
+
+  <h2 style="margin-top:8mm"><span class="num">07</span>Sumber Data</h2>
+  <table>
+    <tr><th style="width:27%">Sumber</th><th style="width:20%">Status</th><th>Peran di Awasana</th></tr>
+    <tr><td><b>BMKG TEWS</b></td><td>Aktif, tanpa key</td><td>Gempa 72 jam terakhir. Gempa M6 ke atas langsung masuk hitung mundur.</td></tr>
+    <tr><td><b>NASA FIRMS</b> (VIIRS S-NPP, NOAA-20, NOAA-21, MODIS)</td><td>Key gratis</td><td>Dicek tiap 10 menit. Titik panas 48 jam jadi heatmap (bobot FRP, memudar seiring waktu). Kluster grid 0,1 derajat jadi kejadian kebakaran.</td></tr>
+    <tr><td><b>PetaBencana.id</b></td><td>Aktif, tanpa key</td><td>Laporan warga 24 jam terakhir, masuk lewat verifier AI.</td></tr>
+    <tr><td><b>MAGMA Indonesia (PVMBG)</b></td><td>Aktif, parsing halaman</td><td>Gunung api Level III dan IV dengan radius larangan perkiraan.</td></tr>
+    <tr><td><b>Open-Meteo</b></td><td>Aktif, tanpa key</td><td>Cuaca dan kualitas udara sebagai konteks verifikasi dan bukti operator.</td></tr>
+    <tr><td><b>CCTV publik resmi</b></td><td>Aktif</td><td>BPJT (tol), portal ATCS (HLS), Restreamer pemda. Dibaca computer vision.</td></tr>
+    <tr><td><b>Laporan warga Awasana</b></td><td>Aktif</td><td>Form Lapor di aplikasi, dengan foto diblur.</td></tr>
+    <tr><td><b>Kriminal</b></td><td>Data demo</td><td>Belum ada API terbuka. Ditampilkan sebagai polygon agregat dengan label sumber dan periode.</td></tr>
+  </table>
+  <p class="small muted">Data seed diberi label "data demo" dan kejadian dari simulator diberi label "(simulasi)" di antarmuka.</p>
+</div>
+
+<!-- ============ 08 ARSITEKTUR ============ -->
+<div class="section">
+  <h2><span class="num">08</span>Arsitektur Sistem</h2>
+  <p>Backend FastAPI menyimpan state di hub dalam memori + SQLite dan mendorong perubahan ke browser lewat WebSocket. Frontend React menampilkan peta, feed, dan detail.</p>
+
+  <svg class="diagram" viewBox="0 0 700 430" xmlns="http://www.w3.org/2000/svg" font-family="Plus Jakarta Sans, Noto Sans, sans-serif" font-size="10">
+    <defs>
+      <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#64748B"/></marker>
+    </defs>
+    <!-- columns labels -->
+    <text x="10" y="14" font-weight="700" fill="#0E7490" font-size="9">SUMBER</text>
+    <text x="190" y="14" font-weight="700" fill="#0E7490" font-size="9">DETEKSI DAN VERIFIKASI</text>
+    <text x="440" y="14" font-weight="700" fill="#0E7490" font-size="9">STATE DAN KEPUTUSAN</text>
+    <text x="600" y="14" font-weight="700" fill="#0E7490" font-size="9">OUTPUT</text>
+
+    <!-- sources -->
+    <g fill="#F1F5F9" stroke="#CBD5E1">
+      <rect x="10" y="24" width="140" height="36" rx="6"/>
+      <rect x="10" y="68" width="140" height="36" rx="6"/>
+      <rect x="10" y="112" width="140" height="36" rx="6"/>
+      <rect x="10" y="168" width="140" height="36" rx="6"/>
+      <rect x="10" y="212" width="140" height="36" rx="6"/>
+      <rect x="10" y="256" width="140" height="36" rx="6"/>
+      <rect x="10" y="320" width="140" height="56" rx="6"/>
+    </g>
+    <g fill="#0F172A">
+      <text x="20" y="40" font-weight="700">BMKG TEWS</text><text x="20" y="53" fill="#64748B" font-size="8.5">gempa</text>
+      <text x="20" y="84" font-weight="700">NASA FIRMS</text><text x="20" y="97" fill="#64748B" font-size="8.5">titik panas satelit</text>
+      <text x="20" y="128" font-weight="700">MAGMA / PVMBG</text><text x="20" y="141" fill="#64748B" font-size="8.5">gunung api</text>
+      <text x="20" y="184" font-weight="700">PetaBencana.id</text><text x="20" y="197" fill="#64748B" font-size="8.5">laporan warga eksternal</text>
+      <text x="20" y="228" font-weight="700">Form Lapor</text><text x="20" y="241" fill="#64748B" font-size="8.5">warga Awasana + foto</text>
+      <text x="20" y="272" font-weight="700">Simulator demo</text><text x="20" y="285" fill="#64748B" font-size="8.5">kejadian tiap 20-30 dtk</text>
+      <text x="20" y="337" font-weight="700">CCTV publik resmi</text><text x="20" y="350" fill="#64748B" font-size="8.5">BPJT tol, ATCS HLS,</text><text x="20" y="362" fill="#64748B" font-size="8.5">Restreamer pemda</text>
+    </g>
+
+    <!-- vision chain -->
+    <g fill="#ECFEFF" stroke="#67E8F9">
+      <rect x="190" y="320" width="120" height="56" rx="6"/>
+      <rect x="190" y="250" width="120" height="50" rx="6"/>
+    </g>
+    <text x="200" y="337" font-weight="700">Worker vision</text><text x="200" y="350" fill="#475569" font-size="8.5">YOLO + YOLO-World</text><text x="200" y="362" fill="#475569" font-size="8.5">1 frame / kamera / 20 dtk</text>
+    <text x="200" y="267" font-weight="700">Aturan + blur</text><text x="200" y="280" fill="#475569" font-size="8.5">3 frame, cooldown</text><text x="200" y="292" fill="#475569" font-size="8.5">blur wajah dan plat</text>
+
+    <!-- LLM -->
+    <g fill="#FFF7ED" stroke="#FDBA74">
+      <rect x="320" y="168" width="100" height="56" rx="6"/>
+      <rect x="320" y="90" width="100" height="56" rx="6"/>
+    </g>
+    <text x="330" y="185" font-weight="700">Tahap 1</text><text x="330" y="198" fill="#475569" font-size="8.5">Gemini Flash-Lite</text><text x="330" y="210" fill="#475569" font-size="8.5">filter cepat</text>
+    <text x="330" y="107" font-weight="700">Tahap 2</text><text x="330" y="120" fill="#475569" font-size="8.5">Gemini Flash</text><text x="330" y="132" fill="#475569" font-size="8.5">verifikasi final</text>
+
+    <!-- hub -->
+    <rect x="440" y="24" width="140" height="80" rx="8" fill="#0B3B5C"/>
+    <text x="452" y="46" fill="#fff" font-weight="800" font-size="11">Hub state</text>
+    <text x="452" y="62" fill="#BAE6FD" font-size="8.5">kejadian, zona, rute,</text>
+    <text x="452" y="74" fill="#BAE6FD" font-size="8.5">kamera + SQLite</text>
+    <text x="452" y="92" fill="#BAE6FD" font-size="8.5">audit_log</text>
+
+    <!-- decision -->
+    <path d="M510 150 L570 185 L510 220 L450 185 Z" fill="#FEF3C7" stroke="#F59E0B"/>
+    <text x="510" y="182" text-anchor="middle" font-weight="700" font-size="8.5">Confirmed,</text>
+    <text x="510" y="194" text-anchor="middle" font-weight="700" font-size="8.5">&#8805; 87%?</text>
+
+    <rect x="440" y="250" width="70" height="46" rx="6" fill="#FFEDD5" stroke="#FB923C"/>
+    <text x="448" y="268" font-weight="700" font-size="9">Hitung</text><text x="448" y="281" font-weight="700" font-size="9">mundur 45s</text>
+    <rect x="520" y="250" width="70" height="46" rx="6" fill="#E0E7FF" stroke="#818CF8"/>
+    <text x="528" y="268" font-weight="700" font-size="9">Butuh</text><text x="528" y="281" font-weight="700" font-size="9">validasi</text>
+
+    <rect x="440" y="320" width="150" height="56" rx="6" fill="#DCFCE7" stroke="#4ADE80"/>
+    <text x="450" y="337" font-weight="700">Operator 112</text><text x="450" y="350" fill="#475569" font-size="8.5">Kirim / Batalkan /</text><text x="450" y="362" fill="#475569" font-size="8.5">Validasi &amp; kirim / Tolak</text>
+
+    <!-- outputs -->
+    <rect x="600" y="24" width="92" height="80" rx="6" fill="#F1F5F9" stroke="#CBD5E1"/>
+    <text x="608" y="44" font-weight="700">Frontend</text><text x="608" y="58" fill="#475569" font-size="8.5">React, peta,</text><text x="608" y="70" fill="#475569" font-size="8.5">feed, detail</text><text x="608" y="88" fill="#0E7490" font-size="8.5">WebSocket /ws</text>
+    <rect x="600" y="320" width="92" height="56" rx="6" fill="#FEE2E2" stroke="#F87171"/>
+    <text x="608" y="337" font-weight="700">Dispatch</text><text x="608" y="350" fill="#475569" font-size="8.5">simulate /</text><text x="608" y="362" fill="#475569" font-size="8.5">webhook pemda</text>
+
+    <!-- arrows -->
+    <g stroke="#64748B" stroke-width="1.3" fill="none" marker-end="url(#a)">
+      <path d="M150 42 H 438"/>
+      <path d="M150 86 H 300 V 60 H 438"/>
+      <path d="M150 130 H 300 V 72 H 438" />
+      <path d="M150 186 H 318"/>
+      <path d="M150 230 H 170 V 200 H 318"/>
+      <path d="M150 274 H 175 V 210 H 318"/>
+      <path d="M150 348 H 188"/>
+      <path d="M250 320 V 302"/>
+      <path d="M250 250 V 220 H 318"/>
+      <path d="M370 168 V 148"/>
+      <path d="M420 118 H 430 V 92 H 438"/>
+      <path d="M420 196 H 432 V 100 H 438" stroke-dasharray="3 3"/>
+      <path d="M510 104 V 148"/>
+      <path d="M480 203 V 248"/>
+      <path d="M545 205 V 248"/>
+      <path d="M475 296 V 318"/>
+      <path d="M555 296 V 318"/>
+      <path d="M590 348 H 598"/>
+      <path d="M580 64 H 598"/>
+    </g>
+    <text x="364" y="160" text-anchor="end" fill="#64748B" font-size="8">lolos + severity tinggi</text>
+    <text x="352" y="236" fill="#64748B" font-size="8">false alarm / uncertain langsung ke hub</text>
+    <text x="10" y="410" fill="#64748B" font-size="8.5">Garis putus-putus: kandidat yang tidak lolos tahap 1 tetap disimpan (disembunyikan bila false alarm &#8805; 0,7), tidak pernah dibuang.</text>
+  </svg>
+
+  <h3>Deploy dan jalur video</h3>
+  <div class="g2">
+    <div class="card small"><h4>Vercel (dua service)</h4>
+      <ul><li><b>frontend</b>: build Vite, semua path ke <code>index.html</code> (SPA).</li>
+      <li><b>backend</b>: FastAPI <code>app.main:app</code>, data di <code>/tmp/awasana</code>.</li>
+      <li>Rewrites: <code>/api/*</code> dan <code>/ws</code> ke backend, sisanya ke frontend. Satu domain, tanpa CORS tambahan.</li></ul></div>
+    <div class="card small"><h4>Video dan vision</h4>
+      <ul><li><b>Video tidak lewat server Awasana.</b> Browser memutar HLS atau player embed langsung dari server pemda, jadi tidak ada beban bandwidth.</li>
+      <li><b>Computer vision di server terpisah</b> (laptop, PC, atau server GPU) dengan <code>ENABLE_VISION=true</code>, karena terlalu berat untuk serverless.</li></ul></div>
+  </div>
+</div>
+
+<!-- ============ 09 CCTV ============ -->
+<div class="section">
+  <h2><span class="num">09</span>CCTV Live dan Computer Vision</h2>
+  <h3>Sumber kamera resmi</h3>
+  <p>Kamera hanya diambil dari siaran yang dibuka instansi untuk publik, tanpa token, login, atau menembus pembatasan. Skrip <code>scripts/sync_cctv.py</code> menguji setiap kamera: harus menyala, CORS terbuka, dan cukup cepat (satu segmen video terunduh lebih cepat dari durasi putarnya). Kamera yang gagal diuji ulang sekali.</p>
+  <table>
+    <tr><th style="width:32%">Jenis sumber</th><th>Daerah saat ini</th></tr>
+    <tr><td>CCTV jalan tol BPJT Kementerian PU (difilter per area)</td><td>Jakarta: JORR S, Akses Tanjung Priok, JORR W1, Dalam Kota Kelapa Gading-Pulo Gebang, Becakayu</td></tr>
+    <tr><td>Stream HLS portal ATCS</td><td>Banjarbaru, Ciamis, Pekanbaru (masuk bila server cukup cepat)</td></tr>
+    <tr><td>Restreamer pemda (player embed resmi + HLS untuk vision)</td><td>Banda Aceh, Kota Magelang, Pati</td></tr>
+    <tr><td>YouTube resmi pemda / BPBD</td><td>Dinonaktifkan, dan tidak pernah diproses computer vision (ToS)</td></tr>
+  </table>
+  <div class="g3" style="margin-bottom:4mm">
+    <div class="stat"><b>85</b><span>Jakarta</span></div>
+    <div class="stat"><b>50</b><span>Banjarbaru</span></div>
+    <div class="stat"><b>41</b><span>Banda Aceh</span></div>
+    <div class="stat"><b>31</b><span>Kota Magelang</span></div>
+    <div class="stat"><b>19</b><span>Ciamis</span></div>
+    <div class="stat"><b>4</b><span>Pati</span></div>
+  </div>
+  <p class="small muted">Hasil sync terakhir, sekitar 230 kamera. Jumlah berubah tergantung kamera yang menyala dan kecepatan server saat diuji.</p>
+
+  <h3>Pipeline deteksi</h3>
+  <div class="flow">
+    <div class="step"><b>Ambil frame</b>Worker bergiliran (default 3 paralel) ambil 1 frame per kamera, jeda minimal 20 detik, koneksi langsung ditutup.</div>
+    <div class="arr">&rarr;</div>
+    <div class="step"><b>YOLO umum</b>Kendaraan tumpang tindih = dugaan tabrakan. Banyak orang = kerumunan.</div>
+    <div class="arr">&rarr;</div>
+    <div class="step"><b>YOLO-World</b>Prompt teks: api, asap, banjir/genangan, kendaraan terguling. Tanpa training.</div>
+    <div class="arr">&rarr;</div>
+    <div class="step"><b>Aturan konsistensi</b>Muncul di 3 frame berturut-turut, ambang 0,5 (0,3 untuk api/banjir), cooldown 10 menit.</div>
+    <div class="arr">&rarr;</div>
+    <div class="step" style="border-top-color:var(--alert)"><b>Blur + LLM</b>Wajah dan plat diblur, lalu ke verifikasi AI dua tahap.</div>
+  </div>
+  <ul class="small">
+    <li><b>Ringan untuk server pemda:</b> hanya satu frame per giliran, tidak menyedot stream terus-menerus.</li>
+    <li><b>Bisa dibatasi:</b> <code>VISION_CITIES</code> dan <code>VISION_MAX_CAMERAS</code> untuk mengatur beban mesin.</li>
+    <li><b>Weights kustom opsional:</b> misalnya model api/asap hasil training dataset D-Fire untuk akurasi lebih tinggi.</li>
+    <li><b>Simulasi terpisah:</b> kejadian simulasi tidak pernah ditempel ke CCTV asli, hanya ke kamera demo. Kejadian di CCTV asli hanya datang dari pipeline vision.</li>
+  </ul>
+</div>
+
+<!-- ============ 10-11 ============ -->
+<div class="section">
+  <h2><span class="num">10</span>Verifikasi AI Anti False Alarm</h2>
+  <p>Setiap kandidat dari CCTV, laporan warga, PetaBencana, dan simulator melewati verifier. Provider default Google Gemini lewat REST <code>generateContent</code>, dengan Claude sebagai alternatif (<code>LLM_PROVIDER=anthropic</code>).</p>
+  <div class="g2">
+    <div class="card"><h4>Tahap 1: Triage</h4><p class="small" style="margin:0">Gemini Flash-Lite, thinking rendah. Semua kandidat lewat sini. Tugasnya menyaring yang jelas palsu atau tidak relevan dengan cepat dan murah.</p></div>
+    <div class="card"><h4>Tahap 2: Verifikasi final</h4><p class="small" style="margin:0">Gemini Flash (atau Claude). Hanya kandidat yang lolos tahap 1 dengan severity tinggi atau kritis. Penalaran lebih dalam sebelum masuk jalur dispatch.</p></div>
+  </div>
+  <h3>Input dan output</h3>
+  <div class="g2 small">
+    <div><b>Input</b><ul>
+      <li>2 sampai 4 frame berurutan (sudah diblur)</li>
+      <li>Lokasi dan jam WIB</li>
+      <li>Cuaca dari Open-Meteo</li>
+      <li>Kejadian dan laporan lain dalam radius 15 km</li></ul></div>
+    <div><b>Output JSON terstruktur (wajib)</b><ul>
+      <li><code>verdict</code>: confirmed, false_alarm, uncertain</li>
+      <li><code>confidence</code> 0 sampai 1</li>
+      <li><code>severity</code>, <code>recommended_agency</code></li>
+      <li><code>reasoning</code> dalam Bahasa Indonesia</li></ul></div>
+  </div>
+  <div class="callout blue small"><b>Gagal dengan aman.</b> Diblokir filter keamanan, output terpotong, kuota habis, atau error API apa pun menghasilkan verdict <i>uncertain</i> dan label "butuh cek manual". False alarm dengan kepastian 0,7 ke atas disembunyikan dari peta tetapi tetap tersimpan di database dan audit log. Tanpa API key, verifier heuristik dipakai dan selalu berlabel <b>simulasi</b>.</div>
+
+  <h2 style="margin-top:8mm"><span class="num">11</span>Alur Dispatch 112 dan Otomasi</h2>
+  <p>Belum ada API publik 112 Indonesia. Layanan dikelola pemda (command center) bersama Komdigi, dan panggilan otomatis tanpa pengecekan berisiko membanjiri operator. Karena itu <b>Awasana tidak pernah menelepon 112</b>. Adapter <code>simulate</code> (default) hanya mencatat payload, adapter <code>webhook</code> mengirim JSON ke endpoint command center.</p>
+  <table>
+    <tr><th style="width:22%">Jalur</th><th style="width:38%">Syarat</th><th>Perilaku</th></tr>
+    <tr><td><span class="pill" style="background:#FFEDD5;color:#C2410C">Hitung mundur</span></td><td>Severity tinggi/kritis, verdict confirmed, kepastian &#8805; 87%</td><td>Timer 45 detik. Operator bisa Kirim sekarang atau Batalkan. Tanpa aksi, terkirim saat timer habis.</td></tr>
+    <tr><td><span class="pill" style="background:#E0E7FF;color:#4338CA">Butuh validasi</span></td><td>Severity tinggi/kritis dengan kepastian &lt; 87%, verdict uncertain, atau laporan warga (bila diatur)</td><td>Tidak ada timer, tidak pernah terkirim sendiri. Operator harus Validasi &amp; kirim atau Tolak.</td></tr>
+    <tr><td><span class="pill" style="background:#FEF9C3;color:#A16207">Gempa resmi</span></td><td>BMKG, magnitudo 6 ke atas</td><td>Langsung masuk hitung mundur (bisa dimatikan di panel Otomasi).</td></tr>
+    <tr><td><span class="pill" style="background:#F1F5F9;color:#475569">Informasi</span></td><td>Severity sedang/rendah</td><td>Tampil di peta, tidak masuk antrean dispatch.</td></tr>
+  </table>
+  <p class="small"><b>Payload</b> (<code>awasana.dispatch.v1</code>): jenis kejadian, koordinat, alamat, waktu, ringkasan AI, link frame bukti, instansi yang direkomendasikan, dan siapa yang memutuskan. Semua keputusan AI, sistem, dan operator tercatat di tabel <code>audit_log</code> (<code>GET /api/audit</code>).</p>
+</div>
+
+<!-- ============ 12-13 ============ -->
+<div class="section">
+  <h2><span class="num">12</span>Privasi, Etika, dan Keamanan</h2>
+  <div class="g2">
+    <div class="card small"><h4>Privasi</h4><ul>
+      <li>Tidak ada face recognition.</li>
+      <li>Wajah diblur dengan OpenCV YuNet (<code>FaceDetectorYN</code>) bila model tersedia.</li>
+      <li>Plat nomor diblur dari sepertiga bawah kotak kendaraan YOLO.</li>
+      <li>Tanpa detektor: gambar diperkecil ke lebar 640 px dan diblur ringan seluruhnya.</li>
+      <li>Blur dilakukan sebelum gambar disimpan atau dikirim ke LLM.</li></ul></div>
+    <div class="card small"><h4>Etika dan akses data</h4><ul>
+      <li>Hanya CCTV yang dibuka publik oleh instansi, tanpa membobol pembatasan.</li>
+      <li>Server yang mengunci akses ke domain sendiri (misal Pelindung Bandung, tol Jasa Marga) tidak dipakai tanpa izin pemilik.</li>
+      <li>YouTube tidak diproses computer vision.</li>
+      <li>Untuk produksi: izin tertulis Dishub/Diskominfo, retensi terbatas.</li></ul></div>
+    <div class="card small"><h4>Pemisahan peran</h4><ul>
+      <li>Halaman publik tersambung ke <code>/ws</code> tanpa catatan internal.</li>
+      <li>Operator memakai <code>/ws?role=operator</code>.</li>
+      <li>Balasan pelapor hanya bisa dari pemegang token laporan.</li></ul></div>
+    <div class="card small"><h4>Akuntabilitas</h4><ul>
+      <li>Audit log lengkap untuk setiap keputusan AI dan manusia.</li>
+      <li>Label sumber jelas (resmi, satelit, CCTV + AI, warga, demo, simulasi).</li>
+      <li>File <code>.env</code> tidak pernah di-commit.</li></ul></div>
+  </div>
+
+</div>
+<div class="section">
+  <h2><span class="num">13</span>Teknologi, API, dan Deploy</h2>
+  <table>
+    <tr><th style="width:20%">Lapisan</th><th>Teknologi</th></tr>
+    <tr><td>Frontend</td><td>React 19, TypeScript, Vite, Tailwind CSS v4, Motion (animasi, menghormati reduced motion), lucide-react, Google Maps (<code>@vis.gl/react-google-maps</code>) atau Leaflet, hls.js</td></tr>
+    <tr><td>Backend</td><td>Python 3.11+, FastAPI, Uvicorn, WebSocket, Pydantic, httpx, SQLite (aiosqlite)</td></tr>
+    <tr><td>AI / LLM</td><td>Google Gemini Flash-Lite dan Flash (default), Anthropic Claude (opsional), verifier heuristik (tanpa key)</td></tr>
+    <tr><td>Computer vision</td><td>Ultralytics YOLO11, YOLO-World v2, OpenCV (YuNet, blur), NumPy</td></tr>
+    <tr><td>Infrastruktur</td><td>Vercel multi-service (frontend + backend), server vision terpisah dengan GPU</td></tr>
+  </table>
+  <h3>Endpoint utama</h3>
+  <table class="small">
+    <tr><th style="width:42%">Endpoint</th><th>Fungsi</th></tr>
+    <tr><td><code>GET /api/snapshot</code></td><td>Semua kejadian, zona, rute, kamera</td></tr>
+    <tr><td><code>WS /ws</code></td><td>Snapshot awal, lalu <code>incident.upsert</code>, <code>camera.update</code>, <code>heartbeat</code></td></tr>
+    <tr><td><code>POST /api/reports</code></td><td>Laporan warga (jenis, deskripsi, lat, lng, foto opsional)</td></tr>
+    <tr><td><code>POST /api/reports/{id}/reply</code></td><td>Balasan pelapor ke operator</td></tr>
+    <tr><td><code>GET /api/incidents/{id}/evidence</code></td><td>Bukti untuk operator: cuaca, kejadian sekitar, kamera, frame</td></tr>
+    <tr><td><code>POST /api/incidents/{id}/dispatch/confirm | cancel | manual</code></td><td>Keputusan dispatch operator</td></tr>
+    <tr><td><code>POST /api/incidents/{id}/resolve | notes</code></td><td>Tutup kejadian dan catatan/pesan operator</td></tr>
+    <tr><td><code>GET | PUT /api/automation</code></td><td>Baca dan ubah aturan otomasi</td></tr>
+    <tr><td><code>GET /api/audit</code></td><td>Audit log keputusan AI dan operator</td></tr>
+    <tr><td><code>POST /api/demo/trigger</code></td><td>Mode demo: buat kejadian kritis CCTV</td></tr>
+  </table>
+</div>
+
+<!-- ============ 14-16 ============ -->
+<div class="section">
+  <h2><span class="num">14</span>Skenario Demo (2 Menit)</h2>
+  <ol>
+    <li>Buka aplikasi. Peta Indonesia langsung tampil dengan semua peringatan dan indikator <b>LIVE</b>.</li>
+    <li>Dalam 20 sampai 30 detik simulator memunculkan kejadian baru, toast muncul untuk kejadian kritis. Atau klik <b>Picu kejadian demo</b>: kejadian CCTV muncul, status "Diverifikasi AI...", lalu terverifikasi.</li>
+    <li>Buka <code>/operator</code>. Klik toast atau feed: peta terbang ke lokasi, panel menampilkan verdict, kepastian, alasan, dan model AI.</li>
+    <li>Kepastian 87% ke atas: hitung mundur 112 berjalan, operator Kirim sekarang atau Batalkan. Di bawah 87% (contoh Tol Palindra, 82%): status <b>Butuh validasi</b>, operator Validasi &amp; kirim atau Tolak.</li>
+    <li>Buka <b>Dashboard</b>: antrean, panel "Kenapa terindikasi", bukti pendukung, log aktivitas, dan panel <b>Otomasi</b>.</li>
+    <li>Kirim laporan dari halaman publik lewat <b>Lapor</b>, lalu balas dari dashboard dengan "Tanya pelapor". Pelapor menerima notifikasi di <b>Laporan saya</b>.</li>
+    <li>Zoom ke kota, klik marker <b>LIVE</b> untuk menonton CCTV resmi. Di operator, buka <b>Video wall</b>.</li>
+  </ol>
+
+  <h2 style="margin-top:8mm"><span class="num">15</span>Dampak dan Roadmap</h2>
+  <div class="g2">
+    <div class="card small"><h4>Dampak yang ditargetkan</h4><ul>
+      <li>Waktu dari kejadian ke laporan turun dari menit atau jam ke hitungan detik.</li>
+      <li>Operator 112 menerima laporan yang sudah terverifikasi, lengkap dengan koordinat, bukti frame, dan instansi yang tepat.</li>
+      <li>Warga melihat rute terhalang, zona asap, genangan, dan radius gunung api di satu tempat.</li>
+      <li>Jejak audit untuk akuntabilitas keputusan AI dan manusia.</li></ul></div>
+    <div class="card small"><h4>Rencana integrasi pemda</h4><ol>
+      <li>Pilot dengan satu command center (misal Jakarta Smart City atau Bandung Command Center) memakai mode webhook ke sistem tiket mereka.</li>
+      <li>Kerja sama akses CCTV ATCS/Dishub dengan perjanjian privasi.</li>
+      <li>Kalibrasi ambang kepastian dan hitung mundur bersama operator, ukur false alarm rate per minggu.</li>
+      <li>Skala ke PostgreSQL + PostGIS, antrean pesan, dan sumber baru (BNPB/InaRISK, sensor tinggi muka air).</li></ol></div>
+  </div>
+
+  <h2 style="margin-top:8mm"><span class="num">16</span>Batasan Saat Ini</h2>
+  <ul class="small">
+    <li>Di Vercel hanya <code>/tmp</code> yang bisa ditulis, sehingga state backend bertahan per instance. Produksi perlu database terkelola.</li>
+    <li>Computer vision belum bisa berjalan di serverless; saat ini server vision menjalankan backend lengkapnya sendiri.</li>
+    <li>Data kriminal masih data demo karena belum ada API terbuka.</li>
+    <li>MAGMA tidak punya API JSON resmi, sehingga datanya diambil dari parsing halaman (fallback ke seed bila gagal).</li>
+    <li>Integrasi 112 masih simulasi atau webhook; perlu kerja sama resmi dengan command center pemda.</li>
+    <li>Akurasi deteksi api/asap meningkat dengan weights kustom; YOLO-World berbasis prompt masih rawan positif palsu, yang kemudian ditekan oleh verifikasi LLM dan operator.</li>
+  </ul>
+
+  <div class="callout green"><b>Inti Awasana:</b> satu peta, banyak sumber, AI yang menyaring, dan manusia yang memutuskan. Lebih cepat untuk warga, lebih bersih untuk petugas.</div>
+  <div class="footer-note">Dokumen ini disusun dari kode sumber dan dokumentasi proyek. Angka kamera dan sumber dapat berubah sesuai hasil sinkronisasi CCTV terbaru.</div>
+</div>
+
+</body>
+</html>
