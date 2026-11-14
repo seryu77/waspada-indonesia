@@ -8,6 +8,7 @@ import { effectiveSeverity } from '../lib/sort'
 import { IncidentMarker } from './markers/IncidentMarker'
 import { CameraMarker } from './markers/CameraMarker'
 import { CameraClusterMarker } from './markers/CameraClusterMarker'
+import { cameraMarkerLabel, clusterMarkerLabel, incidentMarkerLabel } from './markers/labels'
 import { CLUSTER_ZOOM_TO, layoutCameras, type MapViewport } from '../lib/cameraLayout'
 import { hasStream } from '../lib/camera'
 import { PickedMarker } from './markers/PickedMarker'
@@ -93,13 +94,29 @@ function CameraLayer({ cameras, selectedCameraId, onSelectCamera }: Pick<MapProp
   return (
     <>
       {clusters.map((g) => (
-        <AdvancedMarker key={`g-${g.key}`} position={{ lat: g.lat, lng: g.lng }} zIndex={2} clickable anchorLeft="-50%" anchorTop="-50%">
-          <CameraClusterMarker cluster={g} onZoom={(c) => map?.moveCamera({ center: { lat: c.lat, lng: c.lng }, zoom: CLUSTER_ZOOM_TO })} />
+        <AdvancedMarker
+          key={`g-${g.key}`}
+          position={{ lat: g.lat, lng: g.lng }}
+          zIndex={2}
+          title={clusterMarkerLabel(g)}
+          onClick={() => map?.moveCamera({ center: { lat: g.lat, lng: g.lng }, zoom: CLUSTER_ZOOM_TO })}
+          anchorLeft="-50%"
+          anchorTop="-50%"
+        >
+          <CameraClusterMarker cluster={g} />
         </AdvancedMarker>
       ))}
       {singles.map((c) => (
-        <AdvancedMarker key={c.id} position={{ lat: c.lat, lng: c.lng }} zIndex={1} clickable anchorLeft="-50%" anchorTop="-50%">
-          <CameraMarker camera={c} selected={selectedCameraId === c.id} onSelect={onSelectCamera} />
+        <AdvancedMarker
+          key={c.id}
+          position={{ lat: c.lat, lng: c.lng }}
+          zIndex={1}
+          title={cameraMarkerLabel(c)}
+          onClick={() => onSelectCamera(c.id)}
+          anchorLeft="-50%"
+          anchorTop="-50%"
+        >
+          <CameraMarker camera={c} selected={selectedCameraId === c.id} />
         </AdvancedMarker>
       ))}
     </>
@@ -239,12 +256,14 @@ export default function GoogleMapView(p: MapProps) {
             key={i.id}
             position={{ lat: i.lat, lng: i.lng }}
             zIndex={SEVERITY[effectiveSeverity(i)].rank * 10 + (p.selectedId === i.id ? 100 : 0)}
-            // Tanpa ini library mematikan pointer-events konten marker, jadi tombol di dalamnya tidak bisa diklik
-            clickable
+            // Klik ditangani AdvancedMarker (gmp-click), bukan tombol di dalam konten: Google Maps tidak
+            // mendukung elemen fokus di dalam marker, dan event-nya bisa berputar (Maximum call stack).
+            title={incidentMarkerLabel(i)}
+            onClick={() => p.onSelect(i.id)}
             anchorLeft="-50%"
             anchorTop="-50%"
           >
-            <IncidentMarker incident={i} selected={p.selectedId === i.id} onSelect={p.onSelect} />
+            <IncidentMarker incident={i} selected={p.selectedId === i.id} />
           </AdvancedMarker>
         ))}
 

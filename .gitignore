@@ -12,3 +12,6 @@ backend/app/vision/frames/
 graphify-out/
 backend/shared/
 backend/vision_test_out/
+
+# Dokumen dan video demo disimpan di luar repo (../awasana-docs)
+docs/

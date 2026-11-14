@@ -92,13 +92,11 @@ Kejadian simulasi tidak pernah ditempel ke CCTV asli, hanya ke kamera demo. Keja
 | `VITE_GOOGLE_MAP_ID` | kosong | Map ID vector (dark). Kosong = `DEMO_MAP_ID` |
 | `VITE_TILE_URL` | CARTO `dark_all` | Tile untuk fallback Leaflet (gratis tanpa key, jalan di domain publik) |
 | **Backend** | | |
-| `LLM_PROVIDER` | `gemini` | `gemini` atau `anthropic` |
-| `GEMINI_API_KEY` | kosong | Key gratis dari Google AI Studio. Kosong = verifier heuristik berlabel "simulasi" |
-| `GEMINI_TRIAGE_MODEL` | `gemini-flash-lite-latest` | Tahap 1, filter cepat |
-| `GEMINI_VERIFY_MODEL` | `gemini-flash-latest` | Tahap 2, verifikasi final |
-| `VERIFY_EFFORT` | `low` | `low` atau `medium` (Gemini: thinking level) |
-| `ANTHROPIC_API_KEY` | kosong | Dipakai kalau `LLM_PROVIDER=anthropic` |
-| `TRIAGE_MODEL` / `VERIFY_MODEL` | `claude-haiku-5-5` / `claude-opus-5-5` | Model Claude untuk tahap 1 dan 2 |
+| `QWEN_BASE_URL` | kosong | API chat kompatibel OpenAI untuk Qwen3-VL, misal Ollama `http://localhost:11434/v1`. Kosong = verifier heuristik berlabel "simulasi" |
+| `QWEN_API_KEY` | kosong | Kosong untuk Ollama lokal, token Hugging Face untuk `https://router.huggingface.co/v1` |
+| `QWEN_TRIAGE_MODEL` | `qwen3-vl:4b` | Tahap 1, filter cepat |
+| `QWEN_VERIFY_MODEL` | `qwen3-vl:4b` | Tahap 2, verifikasi final |
+| `QWEN_TIMEOUT_S` | `120` | Batas waktu per permintaan (model lokal butuh waktu saat pertama dimuat) |
 | `NASA_FIRMS_MAP_KEY` | kosong | Titik panas satelit. Kosong = sumber FIRMS nonaktif |
 | `DISPATCH_MODE` | `simulate` | `simulate` atau `webhook` |
 | `DISPATCH_WEBHOOK_URL` | kosong | Endpoint command center (mode webhook) |
@@ -150,10 +148,10 @@ flowchart LR
   RULE --> BLUR[Blur wajah & plat]
   WARGA --> BLUR
 
-  BLUR --> T1[Tahap 1: Gemini Flash-Lite<br/>filter cepat]
+  BLUR --> T1[Tahap 1: Qwen3-VL<br/>filter cepat]
   PB --> T1
   SIM --> T1
-  T1 -->|lolos + severity tinggi| T2[Tahap 2: Gemini Flash<br/>verifikasi final]
+  T1 -->|lolos + severity tinggi| T2[Tahap 2: Qwen3-VL<br/>verifikasi final]
   T1 -->|false alarm / uncertain| HUB
   T2 --> HUB
 
@@ -282,15 +280,21 @@ Data seed diberi label "data demo" di UI. Kejadian dari simulator diberi label "
 
 ## Verifikasi AI (anti false alarm)
 
-Provider default adalah Google Gemini (`LLM_PROVIDER=gemini`), dipanggil langsung lewat REST `generateContent` tanpa SDK tambahan (`app/llm/gemini.py`). Claude tetap tersedia dengan `LLM_PROVIDER=anthropic`.
+Verifier memakai Qwen3-VL, model vision-language open-weight (Apache-2.0), dipanggil lewat API chat kompatibel OpenAI tanpa SDK tambahan (`app/llm/qwen.py`). Model bisa jalan di laptop lewat Ollama, jadi frame CCTV tidak perlu keluar dari server pemda, atau lewat Hugging Face Inference Providers.
 
-- **Tahap 1** `GEMINI_TRIAGE_MODEL` (Gemini Flash-Lite, thinking low): semua kandidat dari CCTV, laporan warga, dan simulator.
-- **Tahap 2** `GEMINI_VERIFY_MODEL` (Gemini Flash, thinking `VERIFY_EFFORT`): hanya kandidat yang lolos tahap 1 dengan severity tinggi/kritis.
+```bash
+ollama pull qwen3-vl:4b
+# backend/.env
+QWEN_BASE_URL=http://localhost:11434/v1
+```
+
+- **Tahap 1** `QWEN_TRIAGE_MODEL`: semua kandidat dari CCTV, laporan warga, dan simulator.
+- **Tahap 2** `QWEN_VERIFY_MODEL`: hanya kandidat yang lolos tahap 1 dengan severity tinggi/kritis.
 - Input: 2 sampai 4 frame berurutan (sudah diblur) + konteks lokasi, jam WIB, cuaca, kejadian dan laporan dalam radius 15 km.
-- Output wajib JSON terstruktur (`responseSchema`): `verdict`, `confidence`, `severity`, `reasoning` (Bahasa Indonesia), `recommended_agency`.
+- Output wajib JSON terstruktur (`response_format` JSON schema): `verdict`, `confidence`, `severity`, `reasoning` (Bahasa Indonesia), `recommended_agency`.
 - Diblokir filter keamanan, output terpotong, kuota habis, dan semua error API menghasilkan verdict `uncertain` + "butuh cek manual". Kejadian tidak pernah hilang.
 - False alarm dengan confidence >= 0,7 disembunyikan dari peta tapi tetap tersimpan di database dan audit log.
-- Tanpa API key: verifier heuristik, selalu berlabel **simulasi** di UI.
+- Tanpa `QWEN_BASE_URL`: verifier heuristik, selalu berlabel **simulasi** di UI.
 
 ## Integrasi 112
 

@@ -63,6 +63,23 @@ export interface MyReport {
   at: string
 }
 
+/** Ringkasan kluster titik panas satelit (NASA FIRMS) */
+export interface SatelliteInfo {
+  points: number
+  /** Lintasan berbeda: pasangan satelit + waktu akuisisi */
+  passes: number
+  satellites: string[]
+  frp_total_mw: number
+  high_confidence_points: number
+  /** Titik di sel ~500 m yang panas >= 5 hari berbeda dalam 7 hari (kemungkinan flare/industri) */
+  persistent_points: number
+  persistent_max_days: number
+  /** false: riwayat 7 hari tidak tersedia, cek sumber panas tetap dilewati */
+  persistent_checked: boolean
+  first_seen: string
+  last_seen: string
+}
+
 export interface Incident {
   id: string
   type: HazardType
@@ -86,6 +103,7 @@ export interface Incident {
   resolution?: Resolution
   resolved_at?: string
   resolved_by?: Actor
+  satellite?: SatelliteInfo
 }
 
 /** Aturan otomasi yang bisa diubah operator (GET/PUT /api/automation) */
@@ -174,6 +192,10 @@ export interface SnapshotMeta {
   countdown_s: number
   auto_dispatch_min?: number
   rules?: AutomationRules
+  /** Mode rekam video demo: simulator acak berhenti, data live dibekukan */
+  recording?: boolean
+  /** Jenis bahaya yang tampil saat mode rekam (kosong = semua) */
+  focus?: HazardType[]
   server_time: string
 }
 
@@ -234,6 +256,25 @@ export interface NearbyItem {
   reported_at: string
 }
 
+export interface NewsItem {
+  title: string
+  source: string
+  url: string
+  published_at: string
+}
+
+/** Cek berita (Google News). ok: sudah dicek. outside: lokasi di luar Indonesia. no_place / error: tidak bisa dicek. */
+export interface NewsCheck {
+  status: 'ok' | 'outside' | 'no_place' | 'error'
+  place?: { district?: string; state?: string; country?: string; country_code?: string } | null
+  items: NewsItem[]
+  total: number
+  max_age_days: number
+  query?: string
+  checked_at: string
+  provider: string
+}
+
 export interface Evidence {
   incident_id: string
   conditions: { weather: WeatherNow | null; air: AirNow | null; fetched_at: string; provider: string }
@@ -242,6 +283,8 @@ export interface Evidence {
   camera: (Camera & { distance_km: number; detected_by: boolean }) | null
   frames: string[]
   detection: { source: string; kind: SourceKind; description: string }
+  /** Tidak ada (null) untuk simulator, data demo, dan mode offline */
+  news?: NewsCheck | null
   /** true kalau dirakit di browser karena server tidak terjangkau */
   local?: boolean
 }

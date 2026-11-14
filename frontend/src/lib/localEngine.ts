@@ -80,9 +80,19 @@ export function heuristicVerify(inc: Incident): Verification {
 export const isCitizen = (inc: Pick<Incident, 'source'>) =>
   inc.source.kind === 'citizen' || inc.source.id === 'sim-citizen' || inc.source.id === 'sim-petabencana'
 
+/** Kluster titik panas satelit live (NASA FIRMS). Sama dengan backend is_satellite. */
+export const isSatellite = (inc: Pick<Incident, 'satellite'>) => !!inc.satellite
+
+/** Sama dengan backend satellite_needs_review: hanya kluster kritis yang bukan sumber panas tetap */
+export const satelliteNeedsReview = (inc: Pick<Incident, 'satellite'>, v: Verification) =>
+  !!inc.satellite && v.severity === 'critical' && inc.satellite.persistent_points === 0
+
+type RouteInput = Pick<Incident, 'source' | 'satellite'>
+
 /** Sama dengan backend review_reason: alasan wajib validasi operator, atau null kalau boleh auto-dispatch. */
-export function reviewReason(inc: Pick<Incident, 'source'>, v: Verification, rules: AutomationRules = localRules): string | null {
+export function reviewReason(inc: RouteInput, v: Verification, rules: AutomationRules = localRules): string | null {
   if (!rules.auto_dispatch_enabled) return 'Auto-dispatch dimatikan operator, menunggu validasi operator 112'
+  if (isSatellite(inc)) return 'Indikasi kebakaran dari satelit wajib divalidasi operator 112'
   if (rules.citizen_requires_review && isCitizen(inc)) return 'Laporan warga wajib divalidasi operator 112'
   if (v.verdict !== 'confirmed') return 'Verdict AI belum pasti, menunggu validasi operator 112'
   if (v.confidence < rules.auto_dispatch_min) return `Confidence di bawah ${pct(rules.auto_dispatch_min)}, menunggu validasi operator 112`
@@ -90,9 +100,10 @@ export function reviewReason(inc: Pick<Incident, 'source'>, v: Verification, rul
 }
 
 /** Sama dengan backend dispatch_route: 'auto' (hitung mundur), 'review' (tunggu operator), atau null. */
-export function dispatchRoute(inc: Pick<Incident, 'source'>, v: Verification, rules: AutomationRules = localRules): 'auto' | 'review' | null {
+export function dispatchRoute(inc: RouteInput, v: Verification, rules: AutomationRules = localRules): 'auto' | 'review' | null {
   if (v.severity !== 'high' && v.severity !== 'critical') return null
   if (v.verdict === 'false_alarm') return null
+  if (isSatellite(inc) && !satelliteNeedsReview(inc, v)) return null
   return reviewReason(inc, v, rules) ? 'review' : 'auto'
 }
 
@@ -109,7 +120,7 @@ export function startReview(v: Verification, now = Date.now(), reason?: string):
   }
 }
 
-export function routeDispatch(inc: Pick<Incident, 'source'>, v: Verification): Dispatch | undefined {
+export function routeDispatch(inc: RouteInput, v: Verification): Dispatch | undefined {
   const r = dispatchRoute(inc, v)
   if (r === 'auto') return startCountdown(v)
   if (r === 'review') return startReview(v, Date.now(), reviewReason(inc, v) ?? undefined)

@@ -1,6 +1,6 @@
 // Bukti pendukung untuk operator: ambil dari server, atau rakit di browser kalau server mati.
 // Indikator otomatis (signals) dihitung di sini dari data mentah, sebagai bantuan baca, bukan keputusan.
-import type { AirNow, Evidence, Incident, NearbyItem, Signal, Snapshot, WeatherNow } from '../types'
+import type { AirNow, Evidence, Incident, NearbyItem, NewsCheck, Signal, Snapshot, WeatherNow } from '../types'
 import { effectiveSeverity } from './sort'
 
 const NEARBY_KM = 15
@@ -152,7 +152,8 @@ export function signals(inc: Incident, ev: Evidence): Signal[] {
         add(hum >= 85, `Udara lembap, kelembapan ${hum}%`, 'against')
         add(wind >= 20, `Angin ${n1(wind)} km/j dapat mempercepat sebaran api`, 'support')
         add(rainNow >= 1, `Sedang hujan ${n1(rainNow)} mm`, 'against')
-        add(ev.nearby.some((x) => x.type === 'fire' && x.source_kind === 'satellite'), 'Ada titik panas satelit di sekitar', 'support')
+        add(rain24 >= 20, `Hujan ${rain24 >= 50 ? 'deras ' : ''}24 jam terakhir, ${n1(rain24)} mm`, 'against')
+        add(ev.nearby.some((x) => x.type === 'fire' && x.source_kind === 'satellite'), 'Ada indikasi kebakaran dari satelit di sekitar', 'support')
         break
       case 'flood':
         add(rain24 >= 50, `Hujan lebat 24 jam terakhir, ${n1(rain24)} mm`, 'support')
@@ -177,10 +178,53 @@ export function signals(inc: Incident, ev: Evidence): Signal[] {
     }
     add(gust >= 50, `Angin kencang, hembusan ${Math.round(gust)} km/j`, inc.type === 'fire' || inc.type === 'accident' ? 'support' : 'info')
   }
+  if (inc.satellite) satelliteSignals(inc, ev, add)
+  const news = ev.news
+  if (news?.status === 'ok') {
+    const where = newsPlace(news)
+    add(news.total > 0, `${news.total} berita ${news.max_age_days} hari terakhir tentang kejadian serupa di ${where}`, 'support')
+    // Tidak ada berita bukan bukti false alarm: kejadian kecil atau baru sering belum diberitakan
+    add(news.total === 0, `Belum ada berita ${news.max_age_days} hari terakhir di ${where}`, 'info')
+  }
+  add(news?.status === 'outside', `Lokasi di luar Indonesia (${news?.place?.country ?? 'negara lain'})`, 'info')
   if (a?.us_aqi !== undefined) {
     const smoky = inc.type === 'fire' || inc.type === 'accident' || inc.type === 'volcano'
     add(a.us_aqi > 150, `Kualitas udara ${aqiLevel(a.us_aqi).label.toLowerCase()} (AQI ${a.us_aqi}), indikasi asap atau abu`, smoky ? 'support' : 'info')
     add(inc.type === 'fire' && a.us_aqi <= 50, `Udara bersih (AQI ${a.us_aqi}), tidak ada indikasi asap`, 'against')
   }
   return out
+}
+
+export const newsPlace = (n: NewsCheck) => [n.place?.district, n.place?.state].filter(Boolean).join(', ') || 'wilayah ini'
+
+/** Sama dengan ambang verifier satelit di backend (app/llm/heuristic.py) */
+const PM25_SMOKE = 35.5
+const CO_SMOKE = 800
+
+/** Faktor data satelit: konsistensi antar lintasan, sumber panas tetap, dan bukti di luar satelit. */
+function satelliteSignals(inc: Incident, ev: Evidence, add: (cond: unknown, label: string, effect: Signal['effect']) => void) {
+  const s = inc.satellite
+  if (!s) return
+  add(s.passes >= 3, `Terlihat di ${s.passes} lintasan satelit`, 'support')
+  add(s.passes < 3, `Terlihat di ${s.passes} lintasan satelit (batas minimal)`, 'info')
+  add(s.satellites.length >= 2, `${s.satellites.length} satelit berbeda: ${s.satellites.join(', ')}`, 'support')
+  const share = s.points ? s.high_confidence_points / s.points : 0
+  add(share >= 0.5, `${s.high_confidence_points} dari ${s.points} deteksi berkeyakinan tinggi`, 'support')
+  add(s.high_confidence_points === 0, 'Tidak ada deteksi berkeyakinan tinggi', 'against')
+  add(s.frp_total_mw >= 100, `Total FRP ${Math.round(s.frp_total_mw)} MW`, 'support')
+  add(
+    s.persistent_points > 0,
+    `${s.persistent_points} deteksi di lokasi yang panas ${s.persistent_max_days} hari dalam 7 hari terakhir, kemungkinan flare gas atau industri`,
+    'against',
+  )
+  add(!s.persistent_checked, 'Riwayat 7 hari tidak tersedia, cek sumber panas tetap dilewati', 'info')
+  const pm = ev.conditions.air?.pm2_5
+  const co = ev.conditions.air?.carbon_monoxide
+  const smoke = (pm ?? 0) >= PM25_SMOKE || (co ?? 0) >= CO_SMOKE
+  add(pm !== undefined && pm !== null && pm >= PM25_SMOKE, `PM2.5 ${n1(pm ?? 0)} ug/m3, indikasi asap`, 'support')
+  add(co !== undefined && co !== null && co >= CO_SMOKE, `CO ${Math.round(co ?? 0)} ug/m3, indikasi asap`, 'support')
+  const ground = ev.nearby.filter((x) => x.type === 'fire' && x.source_kind !== 'satellite').length
+  add(ground > 0, `${ground} laporan kebakaran dari sumber lain dalam ${ev.nearby_radius_km} km`, 'support')
+  const reported = ev.news?.status === 'ok' && ev.news.total > 0
+  add(!smoke && ground === 0 && !reported, 'Belum ada bukti di luar satelit (asap, laporan, atau berita)', 'against')
 }

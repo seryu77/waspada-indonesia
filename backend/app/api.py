@@ -141,7 +141,7 @@ async def add_note(incident_id: str, body: NoteIn) -> dict:
     if not text:
         raise HTTPException(422, "Catatan kosong")
     if body.kind == "question" and incident_id not in _report_tokens:
-        raise HTTPException(409, "Pertanyaan hanya bisa dikirim ke laporan warga dari aplikasi Waspada")
+        raise HTTPException(409, "Pertanyaan hanya bisa dikirim ke laporan warga dari aplikasi Awasana")
     inc.notes = [*(inc.notes or []), OperatorNote(text=text, kind=body.kind)]
     await hub.upsert_incident(inc)
     await db.audit(incident_id, "operator", "note_added", {"text": text, "kind": body.kind})
@@ -218,7 +218,7 @@ async def create_report(
         lng=lng,
         address=f"{lat:.4f}, {lng:.4f}",
         severity="medium",
-        source=Source(id="citizen", label="Laporan warga (Waspada)", kind="citizen"),
+        source=Source(id="citizen", label="Laporan warga (Awasana)", kind="citizen"),
         evidence=evidence or None,
         verifying=True,
     )

@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from . import db
 from .api import router
+from .demo import router as demo_router
 from .config import settings
 from .dispatch.manager import manager
 from .hub import hub
@@ -36,7 +37,12 @@ async def run_source(src: DataSource) -> None:
     from .pipeline import process_candidate
 
     async with httpx.AsyncClient(timeout=20, headers={"User-Agent": "WaspadaNusantara/0.1 (hackathon)"}, follow_redirects=True) as client:
+        fetched = False
         while True:
+            if settings.recording_mode and fetched:
+                # Mode rekam: data dibekukan supaya id dan isi kejadian tidak berubah di tengah rekaman
+                await asyncio.sleep(15)
+                continue
             try:
                 res = await src.fetch(client)
                 for z in res.zones:
@@ -48,9 +54,20 @@ async def run_source(src: DataSource) -> None:
                         # Ganti zona radius gunung api demo dengan data PVMBG
                         for zid in [k for k, z in hub.zones.items() if z.kind == "volcano_exclusion" and not k.startswith("zone-magma-")]:
                             hub.zones.pop(zid)
+                    before = {i.id: _verify_key(hub.incidents[i.id]) for i in res.incidents if i.id in hub.incidents}
                     new = await hub.replace_source(src.id, res.incidents)
-                    for inc in new:
-                        await _official_dispatch(inc)
+                    if res.needs_verification:
+                        # Kejadian baru, kejadian yang belum punya verifikasi, dan yang severity-nya berubah
+                        # (atau status sumber panas tetapnya berubah) lewat verifier lagi
+                        for fresh in res.incidents:
+                            inc = hub.incidents.get(fresh.id)
+                            if not inc or inc.status != "active" or inc.verifying:
+                                continue
+                            if inc.verification is None or before.get(inc.id, _verify_key(inc)) != _verify_key(inc):
+                                asyncio.create_task(process_candidate(inc))
+                    else:
+                        for inc in new:
+                            await _official_dispatch(inc)
                 else:
                     for inc in res.incidents:
                         if inc.id in hub.incidents:
@@ -62,12 +79,19 @@ async def run_source(src: DataSource) -> None:
                 if res.zones:
                     await hub.broadcast("snapshot", hub.snapshot())
                 log.info("sumber %s: %d kejadian", src.id, len(res.incidents))
+                fetched = True
             except Exception as e:
                 log.warning("sumber %s gagal: %s", src.id, e)
                 if src.id == "firms":
                     hub.hotspot_meta = {**hub.hotspot_meta, "error": str(e)[:160]}
                     await hub.broadcast("hotspots.meta", hub.hotspot_meta)
             await asyncio.sleep(src.interval_s)
+
+
+def _verify_key(inc) -> tuple:
+    """Perubahan yang membuat kluster satelit perlu diverifikasi ulang."""
+    sat = inc.satellite
+    return (inc.severity, bool(sat and sat.persistent_points))
 
 
 async def _official_dispatch(inc) -> None:
@@ -134,6 +158,7 @@ async def lifespan(_: FastAPI):
 app = FastAPI(title="Waspada Nusantara API", version="0.1.0", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"], allow_methods=["*"], allow_headers=["*"])
 app.include_router(router)
+app.include_router(demo_router)
 
 
 @app.websocket("/ws")

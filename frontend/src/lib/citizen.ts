@@ -50,6 +50,15 @@ export function citizenSteps(i: Incident): CitizenStep[] {
   return steps.map((s, idx) => ({ ...s, current: idx === last }))
 }
 
+export const SATELLITE_UNCONFIRMED = 'Pantauan satelit, belum terkonfirmasi'
+
+/**
+ * Kluster titik panas satelit yang belum terkonfirmasi: verifier belum yakin dan operator 112 belum
+ * memvalidasi. Bisa kebakaran, bisa juga flare industri, atap panas, atau pembakaran terkendali.
+ */
+export const satelliteUnconfirmed = (i: Incident) =>
+  !!i.satellite && i.status === 'active' && i.verification?.verdict !== 'confirmed' && i.dispatch?.state !== 'sent'
+
 /** Label status singkat untuk daftar */
 export function citizenStatus(i: Incident): { label: string; color: string } {
   if (i.status === 'resolved') return { label: i.resolution === 'false_alarm' ? 'Tidak ditemukan' : 'Selesai', color: '#929AA4' }

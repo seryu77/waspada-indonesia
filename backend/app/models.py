@@ -69,6 +69,24 @@ class OperatorNote(BaseModel):
     kind: NoteKind = "note"
 
 
+class SatelliteInfo(BaseModel):
+    """Ringkasan kluster titik panas satelit (NASA FIRMS) untuk verifier dan operator."""
+
+    points: int
+    # Lintasan berbeda: pasangan satelit + waktu akuisisi
+    passes: int
+    satellites: list[str]
+    frp_total_mw: float
+    high_confidence_points: int
+    # Titik di sel ~500 m yang panas >= 5 hari berbeda dalam 7 hari (kemungkinan flare/industri)
+    persistent_points: int = 0
+    persistent_max_days: int = 0
+    # False = riwayat 7 hari tidak tersedia, filter sumber panas tetap dilewati
+    persistent_checked: bool = False
+    first_seen: str
+    last_seen: str
+
+
 class Incident(BaseModel):
     id: str
     type: HazardType
@@ -92,6 +110,7 @@ class Incident(BaseModel):
     resolution: Resolution | None = None
     resolved_at: str | None = None
     resolved_by: Actor | None = None
+    satellite: SatelliteInfo | None = None
 
     def effective_severity(self) -> Severity:
         return self.verification.severity if self.verification else self.severity

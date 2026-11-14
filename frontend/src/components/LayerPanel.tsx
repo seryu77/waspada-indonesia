@@ -54,8 +54,8 @@ function Section({ title, children, action }: { title: string; children: ReactNo
 
 /** Status data satelit di bawah toggle heatmap: segar, menunggu, gagal, atau demo */
 function hotspotText({ mode, meta, count, loading, failed }: HotspotStatus, now: number): string {
-  if (failed) return 'Gagal mengambil titik panas dari server. Coba matikan lalu nyalakan lagi.'
-  if (loading) return 'Memuat titik panas...'
+  if (failed) return 'Gagal mengambil data sebaran panas dari server. Coba matikan lalu nyalakan lagi.'
+  if (loading) return 'Memuat sebaran panas...'
   if (mode === 'demo') return 'Data contoh untuk demo. Kebakaran dari CCTV dan laporan warga tetap realtime.'
   if (mode === 'off') return 'Data satelit tidak aktif. Hanya kebakaran dari CCTV dan laporan warga.'
   if (mode !== 'live') return 'Menyambung ke server...'
@@ -70,7 +70,7 @@ function hotspotText({ mode, meta, count, loading, failed }: HotspotStatus, now:
 function HotspotSection({ layers, setLayers, hotspots }: Pick<ControlsProps, 'layers' | 'setLayers' | 'hotspots'>) {
   const now = useNow(30_000)
   return (
-    <Section title="Titik panas">
+    <Section title="Sebaran panas">
       <Row id="heat" checked={layers.heat} onChange={(v) => setLayers((l) => ({ ...l, heat: v }))}>
         <Flame size={15} className="shrink-0 text-[#FB923C]" aria-hidden />
         <span className="flex-1">Heatmap kebakaran</span>
@@ -92,7 +92,7 @@ function HotspotSection({ layers, setLayers, hotspots }: Pick<ControlsProps, 'la
           </p>
         </div>
       ) : (
-        <p className="px-3 pb-1 pt-0.5 text-xs leading-snug text-muted-fg">Nyalakan untuk melihat sebaran titik panas satelit, CCTV, dan laporan warga.</p>
+        <p className="px-3 pb-1 pt-0.5 text-xs leading-snug text-muted-fg">Nyalakan untuk melihat sebaran panas dari satelit, CCTV, dan laporan warga.</p>
       )}
     </Section>
   )

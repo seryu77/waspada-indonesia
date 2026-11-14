@@ -142,13 +142,16 @@ def camera_for(inc: Incident) -> dict | None:
 
 
 async def gather(inc: Incident) -> dict:
-    cond = await conditions(inc.lat, inc.lng)
+    from .news import check_news
+
+    cond, news = await asyncio.gather(conditions(inc.lat, inc.lng), check_news(inc))
     return {
         "incident_id": inc.id,
         "conditions": cond,
         "nearby": nearby(inc),
         "nearby_radius_km": NEARBY_KM,
         "camera": camera_for(inc),
+        "news": news,
         "frames": inc.evidence or [],
         "detection": {"source": inc.source.label, "kind": inc.source.kind, "description": inc.description},
     }
@@ -167,5 +170,5 @@ def weather_line(cond: dict) -> str | None:
             f"hujan 24 jam {w['rain_24h_mm']} mm, ketinggian {w['elevation_m']} m"
         )
     if a:
-        parts.append(f"kualitas udara US AQI {a['us_aqi']}, PM2.5 {a['pm2_5']} ug/m3")
+        parts.append(f"kualitas udara US AQI {a['us_aqi']}, PM2.5 {a['pm2_5']} ug/m3, CO {a['carbon_monoxide']} ug/m3")
     return "; ".join(parts)

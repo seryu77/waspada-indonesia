@@ -1,7 +1,8 @@
 import { motion } from 'motion/react'
-import { CircleCheck, CircleHelp, CircleX, Loader } from 'lucide-react'
+import { CircleCheck, CircleHelp, CircleX, Loader, Satellite } from 'lucide-react'
 import type { HazardType, Incident, Severity } from '../types'
 import { HAZARDS, SEVERITY } from '../lib/hazards'
+import { SATELLITE_UNCONFIRMED, satelliteUnconfirmed } from '../lib/citizen'
 
 /** Ikon jenis bahaya dalam kotak gelap bergaris warna, mirip pelat rambu. */
 export function HazardBadge({ type, size = 32, solid = false }: { type: HazardType; size?: number; solid?: boolean }) {
@@ -28,7 +29,15 @@ export function SeverityTag({ severity }: { severity: Severity }) {
   )
 }
 
-export function VerifyBadge({ incident }: { incident: Incident }) {
+/** operator: halaman operator 112. Di halaman publik, titik panas satelit yang belum terkonfirmasi diberi label jujur. */
+export function VerifyBadge({ incident, operator = false }: { incident: Incident; operator?: boolean }) {
+  if (!operator && satelliteUnconfirmed(incident)) {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs text-sev-medium">
+        <Satellite size={12} aria-hidden /> {SATELLITE_UNCONFIRMED}
+      </span>
+    )
+  }
   if (incident.verifying) {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-sev-medium">

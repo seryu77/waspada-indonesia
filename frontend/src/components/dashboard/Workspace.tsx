@@ -241,7 +241,7 @@ function Notes({ incident: i, onNote }: Pick<Props, 'incident' | 'onNote'>) {
   const [kind, setKind] = useState<SendKind>('note')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Hanya laporan dari aplikasi Waspada yang punya pelapor yang bisa dihubungi
+  // Hanya laporan dari aplikasi Awasana yang punya pelapor yang bisa dihubungi
   const canAsk = i.id.startsWith('rep-')
   const kinds: SendKind[] = canAsk ? ['note', 'update', 'question'] : ['note', 'update']
   const hint: Record<SendKind, string> = {
@@ -289,7 +289,7 @@ function Notes({ incident: i, onNote }: Pick<Props, 'incident' | 'onNote'>) {
         </ul>
       ) : (
         <p className="mb-3 text-[13px] text-muted-fg">
-          Belum ada catatan.{canAsk ? ' Laporan ini dari aplikasi Waspada, Anda bisa bertanya langsung ke pelapor.' : ''}
+          Belum ada catatan.{canAsk ? ' Laporan ini dari aplikasi Awasana, Anda bisa bertanya langsung ke pelapor.' : ''}
         </p>
       )}
       <div className="mb-2 flex gap-1" role="radiogroup" aria-label="Jenis pesan">

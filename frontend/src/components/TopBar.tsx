@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Globe, Inbox, LayoutDashboard, Map as MapIcon, Megaphone, MonitorPlay, Phone, TriangleAlert } from 'lucide-react'
+import { Globe, Inbox, LayoutDashboard, LogIn, Map as MapIcon, Megaphone, MonitorPlay, Phone, TriangleAlert } from 'lucide-react'
 import type { Connection } from '../types'
 import { clockWIB } from '../lib/format'
 
@@ -114,7 +114,7 @@ export function TopBar({ connection, lastUpdate, stats, onReport, operator, wall
           <TriangleAlert size={16} strokeWidth={2.5} />
         </span>
         <h1 className="whitespace-nowrap font-display text-[17px] font-bold uppercase leading-none tracking-wide sm:text-[19px]">
-          Waspada <span className="hidden font-semibold text-muted-fg min-[400px]:inline">{operator ? 'Operator 112' : 'Nusantara'}</span>
+          Awasana {operator && <span className="hidden font-semibold text-muted-fg min-[400px]:inline">Operator 112</span>}
         </h1>
       </div>
 
@@ -174,6 +174,15 @@ export function TopBar({ connection, lastUpdate, stats, onReport, operator, wall
                 )}
               </button>
             )}
+            <a
+              href="/operator"
+              title="Login operator 112"
+              aria-label="Login sebagai operator 112"
+              className="flex h-9 items-center gap-2 rounded-lg border border-line-strong px-2.5 text-sm font-semibold text-dim transition-colors duration-150 hover:border-fg hover:text-fg md:px-3"
+            >
+              <LogIn size={16} aria-hidden />
+              <span className="hidden md:inline">Login operator</span>
+            </a>
             <button
               type="button"
               onClick={onReport}

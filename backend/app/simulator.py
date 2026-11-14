@@ -74,8 +74,10 @@ async def _expire_old() -> None:
 async def run_simulator(templates: list[dict]) -> None:
     await asyncio.sleep(8)
     while True:
-        await _expire_old()
-        await spawn(templates)
+        # Mode rekam: tidak ada kejadian acak baru, dan kejadian yang sedang direkam tidak ditutup otomatis
+        if not settings.recording_mode:
+            await _expire_old()
+            await spawn(templates)
         await asyncio.sleep(random.uniform(settings.simulator_min_s, settings.simulator_max_s))
 
 

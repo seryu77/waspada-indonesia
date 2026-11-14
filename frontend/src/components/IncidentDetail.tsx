@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
-import { ArrowLeft, Bot, CircleCheck, Inbox, LocateFixed, Megaphone } from 'lucide-react'
+import { ArrowLeft, Bot, CircleCheck, Inbox, LocateFixed, Megaphone, Satellite } from 'lucide-react'
 import type { Camera, Incident, Snapshot } from '../types'
 import { HAZARDS, SEVERITY, SOURCE_KIND_LABEL } from '../lib/hazards'
 import { effectiveSeverity } from '../lib/sort'
 import { coord, dateTimeWIB, timeAgo } from '../lib/format'
+import { SATELLITE_UNCONFIRMED, satelliteUnconfirmed } from '../lib/citizen'
 import { HazardBadge, SegmentBar, SeverityTag, VerifyBadge } from './bits'
 import { DispatchTimeline } from './DispatchTimeline'
 import { EvidencePanel } from './EvidencePanel'
@@ -77,6 +78,15 @@ export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm
           {i.title}
         </h2>
         <p className="mt-1.5 text-sm leading-relaxed text-dim">{i.description}</p>
+        {!operator && satelliteUnconfirmed(i) && (
+          <p role="note" className="mt-3 flex gap-2 border-l-2 border-sev-medium pl-3 text-[13px] leading-relaxed text-dim">
+            <Satellite size={15} className="mt-0.5 shrink-0 text-sev-medium" aria-hidden />
+            <span>
+              <span className="font-semibold text-sev-medium">{SATELLITE_UNCONFIRMED}.</span> Satelit mendeteksi panas di permukaan, belum dicek di
+              lapangan. Bisa kebakaran, tetapi juga bisa flare industri, atap panas, atau pembakaran terkendali.
+            </span>
+          </p>
+        )}
       </header>
 
       <dl className="px-4 pb-2">
@@ -88,6 +98,17 @@ export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm
           {i.source.label}
           <span className="block text-xs text-muted-fg">{SOURCE_KIND_LABEL[i.source.kind]}</span>
         </Field>
+        {i.satellite && (
+          <Field label="Satelit">
+            <span className="tabular">
+              {i.satellite.points} deteksi panas, {i.satellite.passes} lintasan
+            </span>
+            <span className="block text-xs text-muted-fg">
+              {i.satellite.satellites.join(', ')}. Total FRP <span className="tabular">{Math.round(i.satellite.frp_total_mw)}</span> MW
+              {i.satellite.persistent_points > 0 && `. Lokasi panas ${i.satellite.persistent_max_days} hari dalam 7 hari, kemungkinan flare atau industri`}
+            </span>
+          </Field>
+        )}
         <Field label="Dilaporkan">
           <span className="tabular">{dateTimeWIB(i.reported_at)}</span> <span className="text-muted-fg">({timeAgo(i.reported_at)})</span>
         </Field>
@@ -155,7 +176,7 @@ export function IncidentDetail({ incident: i, camera, onBack, onFocus, onConfirm
           <h3 id="ai-h" className="sign text-[13px] text-muted-fg">
             Verifikasi AI
           </h3>
-          {!v && <VerifyBadge incident={i} />}
+          {!v && <VerifyBadge incident={i} operator={operator} />}
         </div>
         {v ? (
           <>

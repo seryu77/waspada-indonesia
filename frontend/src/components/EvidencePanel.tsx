@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { CircleMinus, CirclePlus, Info, Pause, Play, RefreshCw, Video } from 'lucide-react'
-import type { Evidence, Incident, Signal, Snapshot } from '../types'
+import { CircleMinus, CirclePlus, ExternalLink, Info, Newspaper, Pause, Play, RefreshCw, Video } from 'lucide-react'
+import type { Evidence, Incident, NewsCheck, Signal, Snapshot } from '../types'
 import { HAZARDS, SEVERITY } from '../lib/hazards'
-import { aqiLevel, compass, fetchEvidence, signals } from '../lib/evidence'
+import { aqiLevel, compass, fetchEvidence, newsPlace, signals } from '../lib/evidence'
 import { clockWIB, timeAgo } from '../lib/format'
 import { CameraPlayer } from './CameraPlayer'
 
@@ -73,6 +73,48 @@ function Signals({ list }: { list: Signal[] }) {
 }
 
 /** Frame saat deteksi diputar berurutan seperti klip pendek. */
+/** Hasil cek berita: berita dengan jenis bahaya dan wilayah yang sama dalam beberapa hari terakhir */
+function NewsSection({ news }: { news: NewsCheck }) {
+  const where = newsPlace(news)
+  return (
+    <Section
+      id="news-h"
+      title="Cek berita"
+      aside={news.status === 'ok' ? <span className="text-[11px] text-muted-fg tabular">{news.total} ditemukan</span> : undefined}
+    >
+      {news.status === 'ok' && news.items.length > 0 && (
+        <ul className="divide-y divide-line">
+          {news.items.map((n) => (
+            <li key={n.url}>
+              <a href={n.url} target="_blank" rel="noopener noreferrer" className="group flex gap-2 py-2 transition-colors hover:bg-raised/60">
+                <Newspaper size={14} className="mt-0.5 shrink-0 text-muted-fg" aria-hidden />
+                <span className="min-w-0">
+                  <span className="block text-[13px] leading-snug text-fg group-hover:underline">{n.title}</span>
+                  <span className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-fg">
+                    {n.source}, {timeAgo(n.published_at)} <ExternalLink size={10} aria-hidden />
+                  </span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+      <p className="text-[13px] leading-relaxed text-muted-fg">
+        {news.status === 'ok'
+          ? news.items.length > 0
+            ? `Berita ${news.max_age_days} hari terakhir di ${where} yang menyebut kejadian serupa. Baca dulu sebelum memutuskan, judul bisa saja membahas kejadian lain.`
+            : `Belum ada berita ${news.max_age_days} hari terakhir tentang kejadian serupa di ${where}. Ini bukan bukti false alarm: kejadian kecil atau baru sering belum diberitakan.`
+          : news.status === 'outside'
+            ? `Lokasi di luar Indonesia (${news.place?.country ?? 'negara lain'}), berita tidak dicek.`
+            : 'Berita tidak bisa dicek (wilayah tidak dikenali atau layanan berita gagal).'}
+      </p>
+      <p className="mt-2 text-[11px] text-muted-fg">
+        {news.provider}, dicek {clockWIB(news.checked_at)}
+      </p>
+    </Section>
+  )
+}
+
 function FrameClip({ frames }: { frames: string[] }) {
   const [idx, setIdx] = useState(0)
   const [playing, setPlaying] = useState(true)
@@ -273,6 +315,8 @@ export function EvidencePanel({ incident, snapshot, offline, onSelect }: Props) 
               {ev.detection.description}
             </p>
           </Section>
+
+          {ev.news && <NewsSection news={ev.news} />}
 
           <Section id="near-h" title={`Kejadian sekitar (${ev.nearby_radius_km} km)`} aside={<span className="text-[11px] text-muted-fg tabular">{ev.nearby.length} ditemukan</span>}>
             {ev.nearby.length > 0 ? (

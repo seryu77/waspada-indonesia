@@ -38,19 +38,24 @@ export function CameraPlayer({ camera, compact = false }: Props) {
     const onError = () => setState('error')
     video.addEventListener('playing', onPlaying)
     video.addEventListener('error', onError)
-    if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = camera.stream_url
-    } else {
-      void import('hls.js').then(({ default: Hls }) => {
+    // Utamakan hls.js. Chrome versi baru juga menjawab "maybe" untuk HLS bawaan, tapi pemutar bawaannya
+    // gagal di server pemda yang memakai redirect cookieCheck (misal Banjarbaru). Pemutar bawaan hanya
+    // dipakai kalau hls.js tidak didukung (Safari iOS, yang memang memutar HLS secara native).
+    const native = () => {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) video.src = camera.stream_url
+      else setState('error')
+    }
+    void import('hls.js')
+      .then(({ default: Hls }) => {
         if (disposed) return
-        if (!Hls.isSupported()) return setState('error')
+        if (!Hls.isSupported()) return native()
         const h = new Hls({ liveDurationInfinity: true })
         h.on(Hls.Events.ERROR, (_e, data) => data.fatal && setState('error'))
         h.loadSource(camera.stream_url)
         h.attachMedia(video)
         hls = h
       })
-    }
+      .catch(() => !disposed && native())
     return () => {
       disposed = true
       video.removeEventListener('playing', onPlaying)

@@ -3,8 +3,11 @@
 Hanya kejadian aktif dengan severity tinggi/kritis yang masuk alur dispatch:
 - confirmed + confidence >= DISPATCH_CONFIDENCE_MIN (87%): auto-dispatch. Hitung mundur
   DISPATCH_COUNTDOWN_S lalu terkirim otomatis. Operator masih bisa "Kirim sekarang" atau "Batalkan".
-- di bawah ambang, verdict uncertain, laporan warga (aturan citizen_requires_review), atau
-  auto-dispatch dimatikan operator: status "review". Tidak ada timer, tidak pernah
+- di bawah ambang, verdict uncertain, laporan warga (aturan citizen_requires_review), titik panas
+  satelit, atau auto-dispatch dimatikan operator: status "review".
+- titik panas satelit (kluster NASA FIRMS) tidak pernah auto-dispatch. Supaya antrean operator tidak
+  banjir puluhan kluster, hanya kluster kritis yang bukan sumber panas tetap yang masuk validasi.
+  Sisanya cukup dipantau di peta; operator tetap bisa kirim manual. Tidak ada timer, tidak pernah
   terkirim sendiri. Operator harus "Validasi & kirim" atau "Tolak".
 Semua keputusan dicatat di audit log.
 """
@@ -39,7 +42,20 @@ def dispatch_route(inc: Incident) -> str | None:
         return None
     if v.severity not in ("high", "critical") or v.verdict == "false_alarm":
         return None
+    if is_satellite(inc) and not satellite_needs_review(inc):
+        return None
     return "review" if review_reason(inc) else "auto"
+
+
+def is_satellite(inc: Incident) -> bool:
+    """Kluster titik panas satelit live (bukan kejadian demo atau simulator)."""
+    return inc.satellite is not None
+
+
+def satellite_needs_review(inc: Incident) -> bool:
+    v = inc.verification
+    sat = inc.satellite
+    return bool(v and sat and v.severity == "critical" and not sat.persistent_points)
 
 
 def is_citizen(inc: Incident) -> bool:
@@ -54,6 +70,8 @@ def review_reason(inc: Incident) -> str | None:
         return "Belum ada verifikasi AI"
     if not settings.auto_dispatch_enabled:
         return "Auto-dispatch dimatikan operator, menunggu validasi operator 112"
+    if is_satellite(inc):
+        return "Indikasi kebakaran dari satelit wajib divalidasi operator 112"
     if settings.citizen_requires_review and is_citizen(inc):
         return "Laporan warga wajib divalidasi operator 112"
     if v.verdict != "confirmed":

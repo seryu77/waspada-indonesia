@@ -22,17 +22,14 @@ def _seed_default() -> Path:
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=BASE_DIR / ".env", extra="ignore")
 
-    # Provider LLM untuk verifier: "gemini" (default) atau "anthropic"
-    llm_provider: str = "gemini"
+    # Verifier LLM: Qwen3-VL lewat API chat kompatibel OpenAI (Ollama lokal atau Hugging Face).
+    # QWEN_BASE_URL kosong = verifier heuristik berlabel "simulasi"
+    qwen_base_url: str = ""
+    qwen_api_key: str = ""  # kosong untuk Ollama lokal, token HF untuk router.huggingface.co
+    qwen_triage_model: str = "qwen3-vl:4b"
+    qwen_verify_model: str = "qwen3-vl:4b"
+    qwen_timeout_s: float = 120
 
-    gemini_api_key: str = ""
-    gemini_triage_model: str = "gemini-flash-lite-latest"
-    gemini_verify_model: str = "gemini-flash-latest"
-
-    anthropic_api_key: str = ""
-    triage_model: str = "claude-haiku-5-5"
-    verify_model: str = "claude-opus-5-5"
-    verify_effort: str = "low"
 
     nasa_firms_map_key: str = ""
 
@@ -49,6 +46,18 @@ class Settings(BaseSettings):
     demo_mode: bool = True
     simulator_min_s: float = 20
     simulator_max_s: float = 30
+    # Mode rekam video: simulator acak berhenti dan sumber live dibekukan (lihat app/demo.py).
+    # Bisa dinyalakan saat runtime dari halaman /rekam.
+    recording_mode: bool = False
+    # Saat mode rekam: hanya jenis bahaya ini yang dikirim ke peta/dashboard, koma, kosong = semua.
+    # Contoh "fire,earthquake,accident"
+    demo_focus: str = ""
+
+    @property
+    def focus_types(self) -> set[str]:
+        if not self.recording_mode:
+            return set()
+        return {t.strip() for t in self.demo_focus.split(",") if t.strip()}
 
     enable_bmkg: bool = True
     enable_petabencana: bool = True
@@ -71,17 +80,15 @@ class Settings(BaseSettings):
 
     @property
     def llm_enabled(self) -> bool:
-        if self.llm_provider == "gemini":
-            return bool(self.gemini_api_key)
-        return bool(self.anthropic_api_key)
+        return bool(self.qwen_base_url)
 
     @property
     def active_triage_model(self) -> str:
-        return self.gemini_triage_model if self.llm_provider == "gemini" else self.triage_model
+        return self.qwen_triage_model
 
     @property
     def active_verify_model(self) -> str:
-        return self.gemini_verify_model if self.llm_provider == "gemini" else self.verify_model
+        return self.qwen_verify_model
 
     def rules(self) -> dict:
         return {
@@ -95,7 +102,7 @@ class Settings(BaseSettings):
 
     @property
     def verifier_label(self) -> str:
-        return self.llm_provider if self.llm_enabled else "heuristik (simulasi)"
+        return "qwen3-vl" if self.llm_enabled else "heuristik (simulasi)"
 
 
 settings = Settings()

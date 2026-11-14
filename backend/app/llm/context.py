@@ -16,7 +16,7 @@ def haversine_km(a_lat: float, a_lng: float, b_lat: float, b_lng: float) -> floa
     return 2 * r * math.asin(math.sqrt(h))
 
 
-async def build_context(inc: Incident, others: list[Incident], radius_km: float = 15) -> str:
+async def build_context(inc: Incident, others: list[Incident], radius_km: float = 15, cond: dict | None = None, news: dict | None = None) -> str:
     now = datetime.now(WIB)
     near = sorted(
         ((haversine_km(inc.lat, inc.lng, o.lat, o.lng), o) for o in others if o.id != inc.id and o.status == "active"),
@@ -31,12 +31,31 @@ async def build_context(inc: Incident, others: list[Incident], radius_km: float 
         f"Waktu sekarang: {now:%d %b %Y %H:%M} WIB ({'malam' if now.hour < 5 or now.hour >= 19 else 'siang'})",
         f"Sumber: {inc.source.label} ({inc.source.kind})",
     ]
+    sat = inc.satellite
+    if sat:
+        persist = (
+            f"{sat.persistent_points} titik di lokasi yang panas {sat.persistent_max_days} hari berbeda dalam 7 hari (kemungkinan flare/industri)"
+            if sat.persistent_points
+            else "tidak ada titik di lokasi panas berulang 7 hari"
+            if sat.persistent_checked
+            else "riwayat 7 hari tidak tersedia"
+        )
+        lines.append(
+            f"Data satelit (NASA FIRMS): {sat.points} titik dari {sat.passes} lintasan, satelit {', '.join(sat.satellites)}, "
+            f"{sat.high_confidence_points} titik confidence tinggi, total FRP {sat.frp_total_mw:.0f} MW, "
+            f"pertama {sat.first_seen[:16]} UTC, terakhir {sat.last_seen[:16]} UTC; {persist}"
+        )
     from ..evidence import conditions, weather_line
 
     # Sumber yang sama dengan panel bukti operator, jadi angkanya identik
-    w = weather_line(await conditions(inc.lat, inc.lng))
+    w = weather_line(cond if cond is not None else await conditions(inc.lat, inc.lng))
     if w:
         lines.append(f"Kondisi lokasi saat ini (Open-Meteo): {w}")
+    from ..news import news_line
+
+    n = news_line(news)
+    if n:
+        lines.append(n)
     if near:
         lines.append(f"Kejadian/laporan dalam radius {radius_km:.0f} km:")
         for d, o in near:

@@ -75,7 +75,7 @@ export function IncidentFeed({ incidents, selectedId, onSelect, operator }: Prop
                   <span className="block truncate text-[13px] text-muted-fg">{i.address}</span>
                   <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className="text-xs text-dim">{SOURCE_KIND_LABEL[i.source.kind]}</span>
-                    <VerifyBadge incident={i} />
+                    <VerifyBadge incident={i} operator={operator} />
                     {operator && i.dispatch?.state === 'countdown' && (
                       <span className="sign inline-flex items-center gap-1 text-[12px] text-sev-critical">
                         <Siren size={12} aria-hidden /> Auto-dispatch 112

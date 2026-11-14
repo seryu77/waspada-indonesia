@@ -1,13 +1,17 @@
-import { memo } from 'react'
+import { memo, type MouseEvent } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import type { Incident } from '../../types'
 import { HAZARDS, SEVERITY } from '../../lib/hazards'
 import { effectiveSeverity } from '../../lib/sort'
+import { incidentMarkerLabel } from './labels'
+import { SATELLITE_UNCONFIRMED, satelliteUnconfirmed } from '../../lib/citizen'
+import { useMedia } from '../../lib/hooks'
 
 interface Props {
   incident: Incident
   selected: boolean
-  onSelect: (id: string) => void
+  /** Tanpa onSelect, marker hanya tampilan (klik ditangani AdvancedMarker Google Maps). */
+  onSelect?: (id: string) => void
 }
 
 /**
@@ -22,23 +26,29 @@ export const IncidentMarker = memo(function IncidentMarker({ incident, selected,
   const sev = effectiveSeverity(incident)
   const critical = sev === 'critical'
   const handled = incident.dispatch?.state === 'sent' || incident.dispatch?.state === 'cancelled'
-  const size = critical ? 30 : sev === 'high' ? 26 : 22
-  const border = critical ? 0 : sev === 'high' ? 2 : 1.5
+  // Titik panas satelit yang belum terkonfirmasi tidak berdenyut, supaya tidak terkesan darurat pasti
+  const tentative = satelliteUnconfirmed(incident)
+  // Di layar HP marker diperkecil supaya peta tidak tertutup tumpukan marker
+  const compact = useMedia('(max-width: 767px)')
+  const size = compact ? (critical ? 20 : sev === 'high' ? 18 : 15) : critical ? 30 : sev === 'high' ? 26 : 22
+  const border = critical ? 0 : sev === 'high' ? (compact ? 1.5 : 2) : compact ? 1 : 1.5
   const Icon = meta.Icon
+  const Tag = onSelect ? 'button' : 'div'
+  const interactive = onSelect
+    ? {
+        type: 'button' as const,
+        onClick: (e: MouseEvent) => {
+          e.stopPropagation()
+          onSelect(incident.id)
+        },
+        'aria-label': incidentMarkerLabel(incident),
+        title: tentative ? `${incident.title} (${SATELLITE_UNCONFIRMED})` : incident.title,
+      }
+    : { 'aria-hidden': true }
 
   return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation()
-        onSelect(incident.id)
-      }}
-      aria-label={`${meta.label}: ${incident.title}, ${SEVERITY[sev].label}. ${incident.address}`}
-      title={incident.title}
-      className="relative grid place-items-center"
-      style={{ width: size, height: size }}
-    >
-      {critical && !handled && !reduce && (
+    <Tag {...interactive} className={`relative grid place-items-center ${onSelect ? '' : 'cursor-pointer'}`} style={{ width: size, height: size }}>
+      {critical && !handled && !tentative && !reduce && (
         <motion.span
           aria-hidden
           className="absolute inset-0 rounded-xs"
@@ -62,6 +72,6 @@ export const IncidentMarker = memo(function IncidentMarker({ incident, selected,
         <Icon size={size * 0.55} color={critical ? '#0B0D10' : meta.color} strokeWidth={2.4} />
       </motion.span>
       {incident.verifying && <span aria-hidden className="absolute -right-1 -top-1 h-2.5 w-2.5 border-2 border-bg bg-sev-medium" />}
-    </button>
+    </Tag>
   )
 })

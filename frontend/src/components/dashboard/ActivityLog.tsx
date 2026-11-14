@@ -51,7 +51,7 @@ export function ActivityLog({ events, connection, onSelect, incidentId, classNam
         aside={
           <button
             type="button"
-            onClick={() => downloadText(`waspada-log-${new Date().toISOString().slice(0, 16).replace(':', '')}.csv`, activityCsv(shown))}
+            onClick={() => downloadText(`awasana-log-${new Date().toISOString().slice(0, 16).replace(':', '')}.csv`, activityCsv(shown))}
             className="inline-flex h-8 items-center gap-1.5 rounded px-2 text-xs text-dim transition-colors hover:bg-raised hover:text-fg"
           >
             <Download size={13} aria-hidden /> CSV

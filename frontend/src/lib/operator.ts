@@ -2,7 +2,7 @@
 import type { Actor, AutomationRules, Incident, Resolution } from '../types'
 import { HAZARDS, SEVERITY, SOURCE_KIND_LABEL } from './hazards'
 import { effectiveSeverity, sortIncidents } from './sort'
-import { dispatchRoute, isCitizen, reviewReason } from './localEngine'
+import { dispatchRoute, isCitizen, isSatellite, reviewReason, satelliteNeedsReview } from './localEngine'
 import { pct } from './format'
 
 export const isPending = (i: Incident) => i.dispatch?.state === 'review' || i.dispatch?.state === 'countdown'
@@ -14,7 +14,7 @@ export type QueueTab = 'review' | 'countdown' | 'citizen' | 'active' | 'history'
 export const QUEUE_TABS: { id: QueueTab; label: string; hint: string }[] = [
   { id: 'review', label: 'Validasi', hint: 'Menunggu keputusan operator, tidak akan terkirim sendiri' },
   { id: 'countdown', label: 'Hitung mundur', hint: 'Auto-dispatch berjalan, operator bisa kirim sekarang atau batalkan' },
-  { id: 'citizen', label: 'Laporan warga', hint: 'Laporan dari aplikasi Waspada dan PetaBencana' },
+  { id: 'citizen', label: 'Laporan warga', hint: 'Laporan dari aplikasi Awasana dan PetaBencana' },
   { id: 'active', label: 'Semua aktif', hint: 'Semua kejadian yang masih aktif' },
   { id: 'history', label: 'Riwayat', hint: 'Sudah diputuskan atau ditutup' },
 ]
@@ -124,7 +124,7 @@ function detectHeadline(i: Incident): string {
   const origin = i.source.id.replace(/^sim-/, '')
   if (i.source.kind === 'cctv' || origin === 'cctv') return 'Terdeteksi computer vision dari CCTV'
   if (isCitizen(i)) return 'Laporan warga masuk'
-  if (i.source.kind === 'satellite' || origin === 'firms') return 'Titik panas terdeteksi satelit'
+  if (i.source.kind === 'satellite' || origin === 'firms') return 'Panas terdeteksi satelit'
   if (i.source.kind === 'official' || origin === 'bmkg' || origin === 'magma') return 'Data dari sumber resmi'
   return SOURCE_KIND_LABEL[i.source.kind]
 }
@@ -198,6 +198,15 @@ function routeExplanation(i: Incident, rules: AutomationRules, sev: Incident['se
     return {
       headline: 'Dipantau, tidak masuk alur dispatch',
       detail: `Severity ${SEVERITY[sev].label.toLowerCase()}. Hanya severity tinggi dan kritis yang masuk dispatch otomatis. Operator tetap bisa kirim manual.`,
+      tone: 'info',
+    }
+  if (isSatellite(i) && v.verdict !== 'false_alarm' && !satelliteNeedsReview(i, v))
+    return {
+      headline: 'Dipantau, indikasi dari satelit',
+      detail:
+        i.satellite && i.satellite.persistent_points > 0
+          ? 'Kemungkinan sumber panas tetap (flare atau industri). Indikasi dari satelit tidak pernah auto-dispatch; hanya yang kritis masuk antrean validasi. Operator tetap bisa kirim manual.'
+          : 'Indikasi dari satelit tidak pernah auto-dispatch. Supaya antrean tidak banjir, hanya yang kritis masuk antrean validasi. Operator tetap bisa kirim manual.',
       tone: 'info',
     }
   if (v.verdict === 'false_alarm') return { headline: 'Dinilai false alarm oleh AI', detail: `Kepastian ${pct(v.confidence)}, di bawah ambang sembunyi otomatis ${pct(rules.false_alarm_hide_min)}. Cek manual.`, tone: 'muted' }

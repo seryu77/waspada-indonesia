@@ -25,6 +25,10 @@ def public_view(data: dict) -> dict:
     return out
 
 
+# Zona peta per jenis bahaya, untuk filter fokus mode rekam
+ZONE_HAZARD = {"burn": {"fire"}, "smoke": {"fire"}, "flood": {"flood"}, "volcano_exclusion": {"volcano"}, "crime": {"crime"}}
+
+
 class Hub:
     def __init__(self) -> None:
         self.incidents: dict[str, Incident] = {}
@@ -40,12 +44,22 @@ class Hub:
         self.clients: dict[WebSocket, bool] = {}
         self._lock = asyncio.Lock()
 
+    # ---- fokus mode rekam ----
+    def visible(self, inc: Incident) -> bool:
+        """Mode rekam dengan fokus jenis: kejadian jenis lain tidak dikirim ke browser (tetap ada di server)."""
+        focus = settings.focus_types
+        return not focus or inc.type in focus
+
+    def _zone_visible(self, z: Zone) -> bool:
+        focus = settings.focus_types
+        return not focus or bool(ZONE_HAZARD.get(z.kind, set()) & focus)
+
     # ---- snapshot ----
     def snapshot(self, operator: bool = True) -> dict:
-        incidents = [dump(i) for i in self.incidents.values()]
+        incidents = [dump(i) for i in self.incidents.values() if self.visible(i)]
         return {
             "incidents": incidents if operator else [public_view(i) for i in incidents],
-            "zones": [dump(z) for z in self.zones.values()],
+            "zones": [dump(z) for z in self.zones.values() if self._zone_visible(z)],
             "routes": [dump(r) for r in self.routes.values()],
             "cameras": [dump(c) for c in self.cameras.values()],
             # Titik heatmap tidak ikut snapshot; browser mengambilnya lewat /api/hotspots saat toggle aktif
@@ -60,6 +74,8 @@ class Hub:
             "countdown_s": settings.dispatch_countdown_s,
             "auto_dispatch_min": settings.dispatch_confidence_min,
             "rules": settings.rules(),
+            "recording": settings.recording_mode,
+            "focus": sorted(settings.focus_types),
             "server_time": now_iso(),
         }
 
@@ -97,7 +113,8 @@ class Hub:
         data = dump(inc)
         if persist:
             await db.save_incident(data)
-        await self.broadcast("incident.upsert", data)
+        if self.visible(inc):
+            await self.broadcast("incident.upsert", data)
         return inc
 
     async def resolve(self, inc: Incident, reason: str, by: str) -> Incident:
@@ -119,9 +136,13 @@ class Hub:
             if prev is None:
                 new.append(inc)
             else:
-                # Pertahankan verifikasi/dispatch yang sudah ada
+                if prev.status == "resolved" and prev.resolution != "expired":
+                    continue  # sudah ditutup operator atau AI, jangan dihidupkan lagi
+                # Pertahankan verifikasi/dispatch yang sudah ada, termasuk yang sedang diverifikasi
                 inc.verification = prev.verification
+                inc.verifying = prev.verifying
                 inc.dispatch = prev.dispatch
+                inc.notes = prev.notes
                 inc.reported_at = prev.reported_at
             if prev is None or dump(prev) | {"updated_at": ""} != dump(inc) | {"updated_at": ""}:
                 await self.upsert_incident(inc)

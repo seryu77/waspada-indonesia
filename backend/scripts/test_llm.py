@@ -1,6 +1,6 @@
-"""Tes LLM verifier (Gemini atau Claude) tanpa menjalankan server.
+"""Tes LLM verifier (Qwen3-VL) tanpa menjalankan server.
 
-Pakai (dari folder backend, key diisi di .env):
+Pakai (dari folder backend, QWEN_BASE_URL diisi di .env):
   .venv/bin/python scripts/test_llm.py                          # kasus contoh tanpa gambar
   .venv/bin/python scripts/test_llm.py --type fire foto.jpg     # dengan frame bukti
   .venv/bin/python scripts/test_llm.py --type flood --text "Air setinggi lutut di Jl. Ahmad Yani" --lat -7.29 --lng 112.73
